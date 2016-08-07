@@ -6,9 +6,6 @@
   "repository": "https://github.com/75lb/usage-stats.git",
   "license": "MIT",
   "main": "./lib/usage-stats.js",
-  "bin": {
-    "usage-stats": "bin/cli.js"
-  },
   "keywords": [],
   "engines": {
     "node": ">=0.10.0"
@@ -18,6 +15,7 @@
     "docs": "jsdoc2md -t jsdoc2md/README.hbs lib/*.js > README.md; echo"
   },
   "dependencies": {
-    "req-then": "^0.3.3"
+    "req-then": "~0.3.3",
+    "typical": "^2.5.0"
   }
 }
