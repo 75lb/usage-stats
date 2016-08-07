@@ -1,0 +1,23 @@
+{
+  "name": "usage-stats",
+  "author": "Lloyd Brookes <75pound@gmail.com>",
+  "version": "0.0.0",
+  "description": "usage-stats",
+  "repository": "https://github.com/75lb/usage-stats.git",
+  "license": "MIT",
+  "main": "./lib/usage-stats.js",
+  "bin": {
+    "usage-stats": "bin/cli.js"
+  },
+  "keywords": [],
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "test-runner test/*.js",
+    "docs": "jsdoc2md -t jsdoc2md/README.hbs lib/*.js > README.md; echo"
+  },
+  "dependencies": {
+    "req-then": "^0.3.3"
+  }
+}
