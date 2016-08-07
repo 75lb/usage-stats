@@ -5,17 +5,22 @@
   "description": "usage-stats",
   "repository": "https://github.com/75lb/usage-stats.git",
   "license": "MIT",
-  "main": "./lib/usage-stats.js",
+  "main": "index",
   "keywords": [],
   "engines": {
     "node": ">=0.10.0"
   },
   "scripts": {
     "test": "test-runner test/*.js",
-    "docs": "jsdoc2md -t jsdoc2md/README.hbs lib/*.js > README.md; echo"
+    "docs": "jsdoc2md -t jsdoc2md/README.hbs lib/*.js > README.md; echo",
+    "es5": "rm -rf es5 && babel --presets babel-preset-es2015 --no-comments lib --out-dir es5"
   },
   "dependencies": {
-    "req-then": "~0.3.3",
+    "feature-detect-es6": "^1.3.1",
+    "req-then": "~0.3.4",
     "typical": "^2.5.0"
+  },
+  "devDependencies": {
+    "babel-preset-es2015": "^6.13.2"
   }
 }
