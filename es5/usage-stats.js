@@ -16,12 +16,16 @@ var UsageStats = function () {
     options = options || {};
     this.appName = options.appName;
     this.version = options.version;
+    this._readClientId();
+    var os = require('os');
     this.defaults = {
       v: 1,
       tid: options.tid,
-      cid: 1,
+      cid: this.cid,
       ds: 'app',
-      ul: process.env.LANG
+      ul: process.env.LANG,
+      ua: 'jsdoc2md/' + options.version + ' (' + os.type() + '; ' + os.release() + ')',
+      sr: process.stdout.rows + 'x' + process.stdout.columns
     };
     this.hits = [];
   }
@@ -60,6 +64,28 @@ var UsageStats = function () {
       this.hits.length = 0;
 
       return request(reqOptions, payload);
+    }
+  }, {
+    key: '_readClientId',
+    value: function _readClientId() {
+      if (!this.cid) {
+        var os = require('os');
+        var path = require('path');
+        var fs = require('fs');
+        var uuid = require('node-uuid');
+        var tmpdir = path.resolve(os.tmpdir(), 'usage-stats');
+        var cidPath = path.resolve(tmpdir, 'cid');
+        try {
+          this.cid = fs.readFileSync(cidPath, 'utf8');
+        } catch (err) {
+          if (err.code !== 'ENOENT') throw err;
+          this.cid = uuid.v4();
+          try {
+            fs.mkdirSync(tmpdir);
+          } catch (err) {}
+          fs.writeFileSync(cidPath, this.cid);
+        }
+      }
     }
   }]);
 
