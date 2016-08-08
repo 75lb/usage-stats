@@ -1,9 +1,33 @@
 [![view on npm](http://img.shields.io/npm/v/usage-stats.svg)](https://www.npmjs.org/package/usage-stats)
 [![npm module downloads](http://img.shields.io/npm/dt/usage-stats.svg)](https://www.npmjs.org/package/usage-stats)
 [![Build Status](https://travis-ci.org/75lb/usage-stats.svg?branch=master)](https://travis-ci.org/75lb/usage-stats)
-
 [![Dependency Status](https://david-dm.org/75lb/usage-stats.svg)](https://david-dm.org/75lb/usage-stats)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](https://github.com/feross/standard)
+
+# usage-stats
+
+A minimal [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in node.js apps.
+
+```js
+const UsageStats = require('usage-stats')
+const usageStats = new UsageStats({
+  appName: 'sick app',
+  version: '1.0.0',
+  tid: 'UA-98765432-1'
+})
+
+// start a new session
+usageStats.start()
+
+// user set an option..
+usageStats.event('option', 'verbose-level', 'infinite')
+
+// app is running in 'encoding' mode..
+usageStats.screenView('encoding')
+
+// finished, send stats and mark the session as complete
+usageStats.send().end()
+```
 
 {{>main}}
 

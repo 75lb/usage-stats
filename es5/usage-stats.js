@@ -17,60 +17,77 @@ var UsageStats = function () {
     _classCallCheck(this, UsageStats);
 
     options = options || {};
-    this.tmpdir = path.resolve(os.tmpdir(), 'usage-stats');
-    this.queuePath = path.resolve(this.tmpdir, 'queue');
-    this.appName = options.appName;
-    this.version = options.version;
+    this._dir = path.resolve(os.tmpdir(), 'usage-stats');
+    this._queuePath = path.resolve(this._dir, 'queue');
+    this._appName = options.appName;
+    this._version = options.version;
+    this._disabled = false;
     this._readClientId();
-    this.defaults = {
+    this._defaults = {
       v: 1,
       tid: options.tid,
-      cid: this.cid,
+      cid: this._cid,
       ds: 'app',
       ul: process.env.LANG,
       ua: 'jsdoc2md/' + options.version + ' (' + os.type() + '; ' + os.release() + ')',
       sr: process.stdout.rows + 'x' + process.stdout.columns
     };
-    this.hits = [];
+    this._hits = [];
   }
 
   _createClass(UsageStats, [{
     key: 'start',
     value: function start() {
-      this.hits.push({ sc: 'start' });
+      if (this._disabled) return this;
+      this._hits.push({ sc: 'start' });
       return this;
     }
   }, {
     key: 'end',
     value: function end() {
-      this.hits.push({ sc: 'end' });
+      if (this._disabled) return this;
+      this._hits.push({ sc: 'end' });
+      return this;
+    }
+  }, {
+    key: 'disable',
+    value: function disable() {
+      this._disabled = true;
+      return this;
+    }
+  }, {
+    key: 'enable',
+    value: function enable() {
+      this._disabled = false;
       return this;
     }
   }, {
     key: 'event',
     value: function event(category, action, label, value) {
+      if (this._disabled) return this;
       var t = require('typical');
-      var form = Object.assign({}, this.defaults, {
+      var form = Object.assign({}, this._defaults, {
         t: 'event',
         ec: category,
         ea: action
       });
       if (t.isDefined(label)) form.el = label;
       if (t.isDefined(value)) form.ev = value;
-      this.hits.push(postData(form));
+      this._hits.push(postData(form));
       return this;
     }
   }, {
     key: 'screenView',
     value: function screenView(name) {
-      var form = Object.assign({}, this.defaults, {
+      if (this._disabled) return this;
+      var form = Object.assign({}, this._defaults, {
         t: 'screenview',
-        an: this.appName,
-        av: this.version,
+        an: this._appName,
+        av: this._version,
         aid: process.version,
         cd: name
       });
-      this.hits.push(postData(form));
+      this._hits.push(postData(form));
       return this;
     }
   }, {
@@ -78,27 +95,28 @@ var UsageStats = function () {
     value: function send() {
       var _this = this;
 
+      if (this._disabled) return this;
       var queued = '';
       try {
-        queued = fs.readFileSync(this.queuePath, 'utf8');
-        fs.unlinkSync(this.queuePath);
+        queued = fs.readFileSync(this._queuePath, 'utf8');
+        fs.unlinkSync(this._queuePath);
       } catch (err) {
         if (err.code !== 'ENOENT') throw err;
       }
-      var lines = queued ? queued.trim().split('\n').concat(this.hits) : this.hits.slice(0);
-      this.hits.length = 0;
+      var lines = queued ? queued.trim().split('\n').concat(this._hits) : this._hits.slice(0);
+      this._hits.length = 0;
 
       var _loop = function _loop() {
         var batch = lines.splice(0, 5).join('\n') + '\n';
         request(reqOptions, batch).catch(function (err) {
           try {
-            fs.appendFileSync(_this.queuePath, batch);
+            fs.appendFileSync(_this._queuePath, batch);
           } catch (err) {
             if (err.code !== 'ENOENT') throw err;
             try {
-              fs.mkdirSync(_this.tmpdir);
+              fs.mkdirSync(_this._dir);
             } catch (err) {}
-            fs.appendFileSync(_this.queuePath, batch);
+            fs.appendFileSync(_this._queuePath, batch);
           }
         });
       };
@@ -111,18 +129,18 @@ var UsageStats = function () {
   }, {
     key: '_readClientId',
     value: function _readClientId() {
-      if (!this.cid) {
+      if (!this._cid) {
         var uuid = require('node-uuid');
-        var cidPath = path.resolve(this.tmpdir, 'cid');
+        var cidPath = path.resolve(this._dir, 'cid');
         try {
-          this.cid = fs.readFileSync(cidPath, 'utf8');
+          this._cid = fs.readFileSync(cidPath, 'utf8');
         } catch (err) {
           if (err.code !== 'ENOENT') throw err;
-          this.cid = uuid.v4();
+          this._cid = uuid.v4();
           try {
-            fs.mkdirSync(this.tmpdir);
+            fs.mkdirSync(this._dir);
           } catch (err) {}
-          fs.writeFileSync(cidPath, this.cid);
+          fs.writeFileSync(cidPath, this._cid);
         }
       }
     }
