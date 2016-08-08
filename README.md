@@ -8,6 +8,10 @@
 
 A minimal [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in node.js apps.
 
+While offline, queued stats will be stored and re-tried on next `.send()` invocation.
+
+## Synopsis
+
 ```js
 const UsageStats = require('usage-stats')
 const usageStats = new UsageStats({
@@ -25,13 +29,24 @@ usageStats.event('option', 'verbose-level', 'infinite')
 // app is running in 'encoding' mode..
 usageStats.screenView('encoding')
 
-// finished, send stats and mark the session as complete
+// finished, send stats (or store if offline)
+// and mark the session as complete.
 usageStats.send().end()
 ```
 
-<a name="module_usage-stats"></a>
+## List of stats sent
 
-## usage-stats
+Beside tracking events and screenviews, the follow stats are collected each session.
+
+* App name
+* App version
+* User ID (a random UUID, generated once per OS user and stored)
+* Language
+* OS version
+* Terminal resolution (rows by columns)
+
+## API Reference
+
 **Example**  
 ```js
 const UsageStats = require('usage-stats')
@@ -61,6 +76,7 @@ const UsageStats = require('usage-stats')
 | [options] | <code>object</code> |  |
 | [options.appName] | <code>string</code> | App name |
 | [options.version] | <code>string</code> | App version |
+| [options.tid] | <code>string</code> | Google Analytics tracking ID |
 
 <a name="module_usage-stats--UsageStats+start"></a>
 
