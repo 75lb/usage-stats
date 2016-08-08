@@ -39,14 +39,14 @@ var UsageStats = function () {
     key: 'start',
     value: function start() {
       if (this._disabled) return this;
-      this._hits.push({ sc: 'start' });
+      this._hits.push(postData({ sc: 'start' }));
       return this;
     }
   }, {
     key: 'end',
     value: function end() {
       if (this._disabled) return this;
-      this._hits.push({ sc: 'end' });
+      this._hits.push(postData({ sc: 'end' }));
       return this;
     }
   }, {

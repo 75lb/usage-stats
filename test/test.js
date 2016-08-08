@@ -4,16 +4,13 @@ var UsageStats = require('../')
 var a = require('core-assert')
 
 test('simple', function () {
-  class TestStats extends UsageStats {
-    send () {
-      a.strictEqual(this._hits.length, 4)
-    }
-    _readClientId () {
-      this._cid = 'cid'
-    }
+  var assCount = 0
+  UsageStats.prototype.send = function () {
+    a.strictEqual(this._hits.length, 4)
+    assCount++
   }
 
-  const testStats = new TestStats({
+  var testStats = new UsageStats({
     appName: 'test',
     version: 'v1.0.0',
     tid: 'UA-00000000-0'
@@ -23,4 +20,5 @@ test('simple', function () {
   testStats.event('cat', 'action', 'label')
   testStats.screenView('test')
   testStats.end().send()
+  a.strictEqual(assCount, 1)
 })
