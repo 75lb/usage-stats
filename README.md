@@ -6,9 +6,7 @@
 
 # usage-stats
 
-A minimal [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in node.js apps.
-
-While offline, queued stats will be stored and re-tried on next `.send()` invocation.
+A minimal, offline-friendly [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in node.js apps.
 
 ## Synopsis
 
@@ -136,7 +134,7 @@ Track a screenview. All screenview hits are queued until `.send()` is called.
 <a name="module_usage-stats--UsageStats+send"></a>
 
 #### usageStats.send() ↩︎
-Send queued hits. If offline, the hits will be stored and re-tried on next invocation.
+Send queued stats using as few requests as possible (typically a single request - a max of 20 events/screenviews may be sent per request). If offline, the stats will be stored and re-tried on next invocation.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Chainable**  
