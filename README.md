@@ -29,9 +29,9 @@ usageStats.event('option', 'verbose-level', 'infinite')
 // app is running in 'encoding' mode..
 usageStats.screenView('encoding')
 
-// finished, send stats (or store if offline)
-// and mark the session as complete.
-usageStats.send().end()
+// finished - mark the session as complete
+// and send stats (or store if offline).
+usageStats.end().send()
 ```
 
 ## List of stats sent
