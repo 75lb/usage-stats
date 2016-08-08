@@ -6,6 +6,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var request = require('req-then');
 var url = require('url');
+var path = require('path');
+var os = require('os');
+var fs = require('fs');
 var reqOptions = url.parse('http://www.google-analytics.com/batch');
 reqOptions.method = 'POST';
 
@@ -14,10 +17,11 @@ var UsageStats = function () {
     _classCallCheck(this, UsageStats);
 
     options = options || {};
+    this.tmpdir = path.resolve(os.tmpdir(), 'usage-stats');
+    this.queuePath = path.resolve(this.tmpdir, 'queue');
     this.appName = options.appName;
     this.version = options.version;
     this._readClientId();
-    var os = require('os');
     this.defaults = {
       v: 1,
       tid: options.tid,
@@ -31,10 +35,22 @@ var UsageStats = function () {
   }
 
   _createClass(UsageStats, [{
+    key: 'start',
+    value: function start() {
+      this.hits.push({ sc: 'start' });
+      return this;
+    }
+  }, {
+    key: 'end',
+    value: function end() {
+      this.hits.push({ sc: 'end' });
+      return this;
+    }
+  }, {
     key: 'event',
     value: function event(category, action, label, value) {
       var t = require('typical');
-      var form = Object.assign(this.defaults, {
+      var form = Object.assign({}, this.defaults, {
         t: 'event',
         ec: category,
         ea: action
@@ -47,7 +63,7 @@ var UsageStats = function () {
   }, {
     key: 'screenView',
     value: function screenView(name) {
-      var form = Object.assign(this.defaults, {
+      var form = Object.assign({}, this.defaults, {
         t: 'screenview',
         an: this.appName,
         av: this.version,
@@ -60,28 +76,51 @@ var UsageStats = function () {
   }, {
     key: 'send',
     value: function send() {
-      var payload = this.hits.join('\n');
+      var _this = this;
+
+      var queued = '';
+      try {
+        queued = fs.readFileSync(this.queuePath, 'utf8');
+        fs.unlinkSync(this.queuePath);
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+      var lines = queued ? queued.trim().split('\n').concat(this.hits) : this.hits.slice(0);
       this.hits.length = 0;
 
-      return request(reqOptions, payload);
+      var _loop = function _loop() {
+        var batch = lines.splice(0, 5).join('\n') + '\n';
+        request(reqOptions, batch).catch(function (err) {
+          try {
+            fs.appendFileSync(_this.queuePath, batch);
+          } catch (err) {
+            if (err.code !== 'ENOENT') throw err;
+            try {
+              fs.mkdirSync(_this.tmpdir);
+            } catch (err) {}
+            fs.appendFileSync(_this.queuePath, batch);
+          }
+        });
+      };
+
+      while (lines.length) {
+        _loop();
+      }
+      return this;
     }
   }, {
     key: '_readClientId',
     value: function _readClientId() {
       if (!this.cid) {
-        var os = require('os');
-        var path = require('path');
-        var fs = require('fs');
         var uuid = require('node-uuid');
-        var tmpdir = path.resolve(os.tmpdir(), 'usage-stats');
-        var cidPath = path.resolve(tmpdir, 'cid');
+        var cidPath = path.resolve(this.tmpdir, 'cid');
         try {
           this.cid = fs.readFileSync(cidPath, 'utf8');
         } catch (err) {
           if (err.code !== 'ENOENT') throw err;
           this.cid = uuid.v4();
           try {
-            fs.mkdirSync(tmpdir);
+            fs.mkdirSync(this.tmpdir);
           } catch (err) {}
           fs.writeFileSync(cidPath, this.cid);
         }
