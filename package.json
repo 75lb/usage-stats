@@ -1,7 +1,7 @@
 {
   "name": "usage-stats",
   "author": "Lloyd Brookes <75pound@gmail.com>",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "usage-stats",
   "repository": "https://github.com/75lb/usage-stats.git",
   "license": "MIT",
