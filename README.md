@@ -6,7 +6,7 @@
 
 # usage-stats
 
-A minimal, offline-friendly [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in node.js apps.
+A minimal, offline-friendly [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in node.js applications.
 
 ## Synopsis
 
@@ -38,6 +38,7 @@ Beside tracking events and screenviews, the follow stats are collected each sess
 
 * App name
 * App version
+* Node.js version
 * User ID (a random UUID, generated once per OS user and stored)
 * Language
 * OS version
