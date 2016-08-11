@@ -91,6 +91,18 @@ var UsageStats = function () {
       return this;
     }
   }, {
+    key: 'exception',
+    value: function exception(description, isFatal) {
+      if (this._disabled) return this;
+      var form = Object.assign({}, this._defaults, {
+        t: 'exception',
+        exd: description,
+        exf: isFatal ? 1 : 0
+      });
+      this._hits.push(postData(form));
+      return this;
+    }
+  }, {
     key: 'send',
     value: function send() {
       var _this = this;
@@ -151,7 +163,7 @@ var UsageStats = function () {
 
 function postData(form) {
   return Object.keys(form).map(function (key) {
-    return key + '=' + form[key];
+    return key + '=' + encodeURI(form[key]);
   }).join('&');
 }
 

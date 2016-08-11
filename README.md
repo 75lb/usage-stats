@@ -60,6 +60,7 @@ const UsageStats = require('usage-stats')
         * [.enable()](#module_usage-stats--UsageStats+enable) ↩︎
         * [.event(category, action, [label], [value])](#module_usage-stats--UsageStats+event) ↩︎
         * [.screenView(name)](#module_usage-stats--UsageStats+screenView) ↩︎
+        * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ↩︎
         * [.send()](#module_usage-stats--UsageStats+send) ↩︎
 
 <a name="exp_module_usage-stats--UsageStats"></a>
@@ -131,6 +132,19 @@ Track a screenview. All screenview hits are queued until `.send()` is called.
 | Param | Type | Description |
 | --- | --- | --- |
 | name | <code>string</code> | Screen name |
+
+<a name="module_usage-stats--UsageStats+exception"></a>
+
+#### usageStats.exception(description, isFatal) ↩︎
+Track a exception. All screenview hits are queued until `.send()` is called.
+
+**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Chainable**  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| description | <code>string</code> | Error message |
+| isFatal | <code>boolean</code> | Set true if the exception was fatal |
 
 <a name="module_usage-stats--UsageStats+send"></a>
 
