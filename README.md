@@ -85,6 +85,14 @@ const UsageStats = require('usage-stats')
 | [options.version] | <code>string</code> | App version |
 | [options.tid] | <code>string</code> | Google Analytics tracking ID |
 
+**Example**  
+```js
+const usageStats = new UsageStats({
+  appName: 'sick app',
+  version: '1.0.0',
+  tid: 'UA-98765432-1'
+})
+```
 <a name="module_usage-stats--UsageStats+start"></a>
 
 #### usageStats.start() ↩︎
