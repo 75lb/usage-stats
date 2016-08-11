@@ -27,8 +27,15 @@ usageStats.event('option', 'verbose-level', 'infinite')
 // app is running in 'encoding' mode..
 usageStats.screenView('encoding')
 
+try {
+  beginEncoding(options)
+} catch (err) {
+  // exception tracking
+  usageStats.exception(err.message, true)
+}
+
 // finished - mark the session as complete
-// and send stats (or store if offline).
+// and send stats (or store until later, if offline).
 usageStats.end().send()
 ```
 
