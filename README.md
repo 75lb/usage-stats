@@ -41,13 +41,13 @@ usageStats.end().send()
 
 ## List of stats sent
 
-Beside tracking events and screenviews, the follow stats are collected each session.
+Beside tracking events, exceptions and screenviews, the follow stats are collected each session.
 
 * App name
 * App version
-* Node.js version
+* Node.js version (sent as App ID)
 * User ID (a random UUID, generated once per OS user and stored)
-* Language
+* Language (`process.env.LANG`, if set)
 * OS version
 * Terminal resolution (rows by columns)
 
