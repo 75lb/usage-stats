@@ -19,7 +19,7 @@ var UsageStats = function () {
     this._appName = options.appName;
     this._version = options.version;
     this._disabled = false;
-    this._readClientId();
+    this._cid = this._getClientId();
     this._defaults = {
       v: 1,
       tid: options.tid,
@@ -163,22 +163,22 @@ var UsageStats = function () {
       }
     }
   }, {
-    key: '_readClientId',
-    value: function _readClientId() {
-      if (!this._cid) {
-        var uuid = require('node-uuid');
-        var cidPath = path.resolve(this._dir, 'cid');
+    key: '_getClientId',
+    value: function _getClientId() {
+      var cid = null;
+      var uuid = require('node-uuid');
+      var cidPath = path.resolve(this._dir, 'cid');
+      try {
+        cid = fs.readFileSync(cidPath, 'utf8');
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+        cid = uuid.v4();
         try {
-          this._cid = fs.readFileSync(cidPath, 'utf8');
-        } catch (err) {
-          if (err.code !== 'ENOENT') throw err;
-          this._cid = uuid.v4();
-          try {
-            fs.mkdirSync(this._dir);
-          } catch (err) {}
-          fs.writeFileSync(cidPath, this._cid);
-        }
+          fs.mkdirSync(this._dir);
+        } catch (err) {}
+        fs.writeFileSync(cidPath, cid);
       }
+      return cid;
     }
   }]);
 
