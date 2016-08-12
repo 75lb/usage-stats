@@ -5,12 +5,9 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var request = require('req-then');
-var url = require('url');
 var path = require('path');
 var os = require('os');
 var fs = require('fs');
-var reqOptions = url.parse('http://www.google-analytics.com/batch');
-reqOptions.method = 'POST';
 
 var UsageStats = function () {
   function UsageStats(options) {
@@ -30,7 +27,7 @@ var UsageStats = function () {
       ds: 'app',
       ul: process.env.LANG,
       ua: 'jsdoc2md/' + options.version + ' (' + os.type() + '; ' + os.release() + ')',
-      sr: process.stdout.rows + 'x' + process.stdout.columns
+      sr: process.stdout.rows && process.stdout.columns ? process.stdout.rows + 'x' + process.stdout.columns : 'N/A'
     };
     this._hits = [];
   }
@@ -39,14 +36,14 @@ var UsageStats = function () {
     key: 'start',
     value: function start() {
       if (this._disabled) return this;
-      this._hits.push(postData({ sc: 'start' }));
+      this._sessionStarted = true;
       return this;
     }
   }, {
     key: 'end',
     value: function end() {
       if (this._disabled) return this;
-      this._hits.push(postData({ sc: 'end' }));
+      this._hits[this._hits.length - 1] += '&sc=end';
       return this;
     }
   }, {
@@ -71,6 +68,10 @@ var UsageStats = function () {
         ec: category,
         ea: action
       });
+      if (this._sessionStarted) {
+        form.sc = 'start';
+        this._sessionStarted = false;
+      }
       if (t.isDefined(label)) form.el = label;
       if (t.isDefined(value)) form.ev = value;
       this._hits.push(postData(form));
@@ -87,6 +88,10 @@ var UsageStats = function () {
         aid: process.version,
         cd: name
       });
+      if (this._sessionStarted) {
+        form.sc = 'start';
+        this._sessionStarted = false;
+      }
       this._hits.push(postData(form));
       return this;
     }
@@ -104,9 +109,10 @@ var UsageStats = function () {
     }
   }, {
     key: 'send',
-    value: function send() {
+    value: function send(options) {
       var _this = this;
 
+      options = options || {};
       if (this._disabled) return this;
       var queued = '';
       try {
@@ -118,25 +124,43 @@ var UsageStats = function () {
       var lines = queued ? queued.trim().split('\n').concat(this._hits) : this._hits.slice(0);
       this._hits.length = 0;
 
-      var _loop = function _loop() {
-        var batch = lines.splice(0, 5).join('\n') + '\n';
-        request(reqOptions, batch).catch(function (err) {
-          try {
-            fs.appendFileSync(_this._queuePath, batch);
-          } catch (err) {
-            if (err.code !== 'ENOENT') throw err;
-            try {
-              fs.mkdirSync(_this._dir);
-            } catch (err) {}
-            fs.appendFileSync(_this._queuePath, batch);
-          }
+      var url = require('url');
+      var requests = [];
+      if (options.debug) {
+        var reqOptions = url.parse('https://www.google-analytics.com/debug/collect');
+        reqOptions.method = 'POST';
+        var hits = lines.join('\n') + '\n';
+        return request(reqOptions, hits).then(function (response) {
+          var output = {
+            hits: lines,
+            result: JSON.parse(response.data.toString())
+          };
+          return JSON.stringify(output, null, '  ');
         });
-      };
+      } else {
+        var _loop = function _loop() {
+          var batch = lines.splice(0, 20).join('\n') + '\n';
+          var reqOptions = url.parse('http://www.google-analytics.com/batch');
+          reqOptions.method = 'POST';
+          var req = request(reqOptions, batch).catch(function (err) {
+            try {
+              fs.appendFileSync(_this._queuePath, batch);
+            } catch (err) {
+              if (err.code !== 'ENOENT') throw err;
+              try {
+                fs.mkdirSync(_this._dir);
+              } catch (err) {}
+              fs.appendFileSync(_this._queuePath, batch);
+            }
+          });
+          requests.push(req);
+        };
 
-      while (lines.length) {
-        _loop();
+        while (lines.length) {
+          _loop();
+        }
+        return Promise.all(requests);
       }
-      return this;
     }
   }, {
     key: '_readClientId',
