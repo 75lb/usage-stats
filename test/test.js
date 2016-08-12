@@ -6,7 +6,7 @@ var a = require('core-assert')
 test('simple', function () {
   var assCount = 0
   UsageStats.prototype.send = function () {
-    a.strictEqual(this._hits.length, 4)
+    a.strictEqual(this._hits.length, 2)
     assCount++
   }
 
