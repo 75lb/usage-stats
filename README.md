@@ -87,7 +87,7 @@ const UsageStats = require('usage-stats')
 
 | Param | Type | Description |
 | --- | --- | --- |
-| trackingId | <code>string</code> | Google Analytics tracking ID |
+| trackingId | <code>string</code> | Google Analytics tracking ID (required). |
 | [options] | <code>object</code> |  |
 | [options.appName] | <code>string</code> | App name |
 | [options.version] | <code>string</code> | App version |
@@ -96,22 +96,21 @@ const UsageStats = require('usage-stats')
 
 **Example**  
 ```js
-const usageStats = new UsageStats({
+const usageStats = new UsageStats('UA-98765432-1', {
   appName: 'sick app',
-  version: '1.0.0',
-  tid: 'UA-98765432-1'
+  version: '1.0.0'
 })
 ```
 <a name="module_usage-stats--UsageStats.UsageStats+_dir"></a>
 
 #### usageStats._dir : <code>string</code>
-Temporary directory for persisting the clientID and queue.
+Absolute path of the temporary directory used for persisting clientID and queue.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats.UsageStats+_queuePath"></a>
 
 #### usageStats._queuePath : <code>string</code>
-Queue path.
+The absolute path of the queue.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats+start"></a>
