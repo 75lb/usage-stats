@@ -13,6 +13,17 @@ var UsageStats = require('../lib/usage-stats');
 var a = require('core-assert');
 var fs = require('fs');
 var path = require('path');
+var os = require('os');
+
+var tmpPath = path.resolve(__dirname, '../../', 'tmp');
+var pathCount = 0;
+function getQueuePath() {
+  return path.resolve(tmpPath, 'queue' + pathCount++);
+}
+
+try {
+  fs.mkdirSync(tmpPath);
+} catch (err) {}
 
 test('trackingId required', function () {
   a.throws(function () {
@@ -45,7 +56,7 @@ test('.event() validation', function () {
 
 test('._enqueue(hits)', function () {
   var testStats = new UsageStats('UA-00000000-0');
-  testStats._queuePath = path.resolve(testStats._dir, 'test-queue.json');
+  testStats._queuePath = getQueuePath();
   fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2']);
   testStats._enqueue(['hit3']);
@@ -56,17 +67,17 @@ test('._enqueue(hits)', function () {
 
 test('._dequeue(count)', function () {
   var testStats = new UsageStats('UA-00000000-0');
-  testStats._queuePath = path.resolve(testStats._dir, 'test-queue2.json');
+  testStats._queuePath = getQueuePath();
   fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2', 'hit3', 'hit4']);
 
   var queue = testStats._dequeue(2);
   a.deepEqual(queue, ['hit1', 'hit2']);
-  var queue = testStats._dequeue(1);
+  queue = testStats._dequeue(1);
   a.deepEqual(queue, ['hit3']);
-  var queue = testStats._dequeue(2);
+  queue = testStats._dequeue(2);
   a.deepEqual(queue, ['hit4']);
-  var queue = testStats._dequeue(2);
+  queue = testStats._dequeue(2);
   a.deepEqual(queue, []);
 });
 
@@ -81,7 +92,7 @@ test('successful send, nothing queued', function () {
 
       var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
 
-      _this._queuePath = path.resolve(_this._dir, 'test-queue3.json');
+      _this._queuePath = getQueuePath();
       fs.writeFileSync(_this._queuePath, '');
       return _this;
     }
@@ -100,7 +111,6 @@ test('successful send, nothing queued', function () {
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
-
     a.ok(!queued.length);
   });
 });
@@ -116,7 +126,7 @@ test('failed send, something queued', function () {
 
       var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
 
-      _this2._queuePath = path.resolve(_this2._dir, 'test-queue4.json');
+      _this2._queuePath = getQueuePath();
       fs.writeFileSync(_this2._queuePath, '');
       return _this2;
     }
@@ -135,7 +145,41 @@ test('failed send, something queued', function () {
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
-
     a.strictEqual(queued.length, 1);
+  });
+});
+
+test('successful send with something queued', function () {
+  var UsageTest = function (_UsageStats3) {
+    _inherits(UsageTest, _UsageStats3);
+
+    function UsageTest(tid, options) {
+      _classCallCheck(this, UsageTest);
+
+      var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
+
+      _this3._queuePath = getQueuePath();
+      fs.writeFileSync(_this3._queuePath, 'test=something-queued\n');
+      return _this3;
+    }
+
+    _createClass(UsageTest, [{
+      key: '_request',
+      value: function _request(reqOptions, data) {
+        var lines = data.trim().split(os.EOL);
+        a.ok(/something-queued/.test(lines[0]));
+        a.ok(/cd=test/.test(lines[1]));
+        return Promise.resolve({ res: { statusCode: 200 }, data: 'test' });
+      }
+    }]);
+
+    return UsageTest;
+  }(UsageStats);
+
+  var testStats = new UsageTest('UA-00000000-0');
+  testStats.screenView('test');
+  return testStats.send().then(function (responses) {
+    var queued = testStats._dequeue();
+    a.strictEqual(queued.length, 0);
   });
 });

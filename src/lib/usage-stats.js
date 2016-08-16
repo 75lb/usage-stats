@@ -222,9 +222,6 @@ class UsageStats {
               return response
             }
           })
-          // .then(() => {
-          //   fs.unlinkSync(this._queuePath)
-          // })
           .catch(err => {
             this._enqueue(batch)
           })
