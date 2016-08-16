@@ -3,6 +3,12 @@ const path = require('path')
 const os = require('os')
 const fs = require('fs')
 
+const gaUrl = {
+  debug: 'https://www.google-analytics.com/debug/collect',
+  collect: 'https://www.google-analytics.com/collect',
+  batch: 'https://www.google-analytics.com/batch'
+}
+
 /**
  * @module usage-stats
  * @typicalname usageStats
@@ -169,20 +175,22 @@ class UsageStats {
    * @param [options] {object}
    * @param [options.debug] {boolean} - [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result.
    * @returns {Promise}
+   * @fulfil debug mode: `{ hits: {hits}, result: {validation result} }`
+   * @fulfil live mode: `{ res: {res}, data: {Buffer} }`
    */
   send (options) {
     if (this._disabled) return this
     options = options || {}
-    let queued = this._getQueued()
-    let lines = queued ? queued.trim().split(os.EOL).concat(this._hits) : this._hits.slice(0)
+
+    const toSend = this._dequeue().concat(this._hits)
     this._hits.length = 0
 
     const url = require('url')
     const requests = []
     if (options.debug) {
-      const reqOptions = url.parse('https://www.google-analytics.com/debug/collect')
+      const reqOptions = url.parse(gaUrl.debug)
       reqOptions.method = 'POST'
-      const hits = lines.join(os.EOL) + os.EOL
+      const hits = this._dequeue()
       return this._request(reqOptions, hits)
         .then(response => {
           const output = {
@@ -202,11 +210,11 @@ class UsageStats {
           }
         })
     } else {
-      while (lines.length) {
-        const batchLines = lines.splice(0, 20)
-        const reqOptions = url.parse('http://www.google-analytics.com/batch')
-        reqOptions.method = 'POST'
-        const req = this._request(reqOptions, batchLines.join(os.EOL) + os.EOL)
+      const reqOptions = url.parse(gaUrl.batch)
+      reqOptions.method = 'POST'
+      while (toSend.length) {
+        const batch = toSend.splice(0, 20)
+        const req = this._request(reqOptions, createHitsPayload(batch))
           .then(response => {
             if (response.res.statusCode >= 300) {
               throw new Error('Unexpected response')
@@ -218,7 +226,7 @@ class UsageStats {
           //   fs.unlinkSync(this._queuePath)
           // })
           .catch(err => {
-            this._enqueue(batchLines)
+            this._enqueue(batch)
           })
         requests.push(req)
       }
@@ -255,19 +263,27 @@ class UsageStats {
   }
 
   /**
-   * Sync function, returns hits queued.
+   * Returns hits queued.
+   * @param [count] {number} - Number of hits to dequeue. Defaults to "all hits".
    * @return {string[]}
    */
   _dequeue (count) {
     try {
       const queue = fs.readFileSync(this._queuePath, 'utf8')
-      const hits = queue.trim().split(os.EOL)
-      const output = hits.splice(0, count)
-      fs.writeFileSync(this._queuePath, arrayToLines(hits))
-      return arrayToLines(output)
+      const hits = queue ? queue.trim().split(os.EOL) : []
+      let output = []
+      if (count) {
+        output = hits.splice(0, count)
+        fs.writeFileSync(this._queuePath, createHitsPayload(hits))
+      } else {
+        fs.writeFileSync(this._queuePath, '')
+        output = hits
+      }
+      return output
     } catch (err) {
+      /* queue file doesn't exist */
       if (err.code === 'ENOENT') {
-        return ''
+        return []
       } else {
         throw err
       }
@@ -275,10 +291,10 @@ class UsageStats {
   }
 
   /**
-   *
+   * @param {string[]}
    */
   _enqueue (hits) {
-    fs.appendFileSync(this._queuePath, arrayToLines(hits))
+    fs.appendFileSync(this._queuePath, createHitsPayload(hits))
   }
 
   _getScreenResolution () {
@@ -296,7 +312,7 @@ function postData (form) {
     .join('&')
 }
 
-function arrayToLines (array) {
+function createHitsPayload (array) {
   let output = array.join(os.EOL)
   if (output) output += os.EOL
   return output

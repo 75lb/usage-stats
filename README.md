@@ -74,8 +74,8 @@ const UsageStats = require('usage-stats')
         * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
         * [._getClientId()](#module_usage-stats--UsageStats+_getClientId) ⇒ <code>string</code>
         * [._request()](#module_usage-stats--UsageStats+_request) ⇒ <code>Promise</code>
-        * [._dequeue()](#module_usage-stats--UsageStats+_dequeue) ⇒ <code>Array.&lt;string&gt;</code>
-        * [._enqueue()](#module_usage-stats--UsageStats+_enqueue)
+        * [._dequeue([count])](#module_usage-stats--UsageStats+_dequeue) ⇒ <code>Array.&lt;string&gt;</code>
+        * [._enqueue(hits)](#module_usage-stats--UsageStats+_enqueue)
 
 <a name="exp_module_usage-stats--UsageStats"></a>
 
@@ -187,6 +187,8 @@ Track a exception. All screenview hits are queued until `.send()` is called.
 Send queued stats using as few requests as possible (typically a single request - a max of 20 events/screenviews may be sent per request). If offline, the stats will be stored and re-tried on next invocation.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Fulfil**: debug mode: `{ hits: {hits}, result: {validation result} }`  
+**Fulfil**: live mode: `{ res: {res}, data: {Buffer} }`  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -208,14 +210,24 @@ The request method used internally, can be overridden for testing or other purpo
 **Fulfil**: `{ res: <node response object>, data: <Buffer payload> }`  
 <a name="module_usage-stats--UsageStats+_dequeue"></a>
 
-#### usageStats._dequeue() ⇒ <code>Array.&lt;string&gt;</code>
-Sync function, returns hits queued.
+#### usageStats._dequeue([count]) ⇒ <code>Array.&lt;string&gt;</code>
+Returns hits queued.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [count] | <code>number</code> | Number of hits to dequeue. Defaults to "all hits". |
+
 <a name="module_usage-stats--UsageStats+_enqueue"></a>
 
-#### usageStats._enqueue()
+#### usageStats._enqueue(hits)
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+
+| Param | Type |
+| --- | --- |
+| hits | <code>Array.&lt;string&gt;</code> | 
+
 
 * * *
 

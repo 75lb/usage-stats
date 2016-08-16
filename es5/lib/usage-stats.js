@@ -8,6 +8,12 @@ var path = require('path');
 var os = require('os');
 var fs = require('fs');
 
+var gaUrl = {
+  debug: 'https://www.google-analytics.com/debug/collect',
+  collect: 'https://www.google-analytics.com/collect',
+  batch: 'https://www.google-analytics.com/batch'
+};
+
 var UsageStats = function () {
   function UsageStats(trackingId, options) {
     _classCallCheck(this, UsageStats);
@@ -118,16 +124,16 @@ var UsageStats = function () {
 
       if (this._disabled) return this;
       options = options || {};
-      var queued = this._getQueued();
-      var lines = queued ? queued.trim().split(os.EOL).concat(this._hits) : this._hits.slice(0);
+
+      var toSend = this._dequeue().concat(this._hits);
       this._hits.length = 0;
 
       var url = require('url');
       var requests = [];
       if (options.debug) {
-        var reqOptions = url.parse('https://www.google-analytics.com/debug/collect');
+        var reqOptions = url.parse(gaUrl.debug);
         reqOptions.method = 'POST';
-        var hits = lines.join(os.EOL) + os.EOL;
+        var hits = this._dequeue();
         return this._request(reqOptions, hits).then(function (response) {
           var output = {
             hits: lines,
@@ -145,23 +151,24 @@ var UsageStats = function () {
           }
         });
       } else {
+        var _reqOptions = url.parse(gaUrl.batch);
+        _reqOptions.method = 'POST';
+
         var _loop = function _loop() {
-          var batchLines = lines.splice(0, 20);
-          var reqOptions = url.parse('http://www.google-analytics.com/batch');
-          reqOptions.method = 'POST';
-          var req = _this._request(reqOptions, batchLines.join(os.EOL) + os.EOL).then(function (response) {
+          var batch = toSend.splice(0, 20);
+          var req = _this._request(_reqOptions, createHitsPayload(batch)).then(function (response) {
             if (response.res.statusCode >= 300) {
               throw new Error('Unexpected response');
             } else {
               return response;
             }
           }).catch(function (err) {
-            _this._enqueue(batchLines);
+            _this._enqueue(batch);
           });
           requests.push(req);
         };
 
-        while (lines.length) {
+        while (toSend.length) {
           _loop();
         }
         return Promise.all(requests);
@@ -193,13 +200,19 @@ var UsageStats = function () {
     value: function _dequeue(count) {
       try {
         var queue = fs.readFileSync(this._queuePath, 'utf8');
-        var hits = queue.trim().split(os.EOL);
-        var output = hits.splice(0, count);
-        fs.writeFileSync(this._queuePath, arrayToLines(hits));
-        return arrayToLines(output);
+        var hits = queue ? queue.trim().split(os.EOL) : [];
+        var output = [];
+        if (count) {
+          output = hits.splice(0, count);
+          fs.writeFileSync(this._queuePath, createHitsPayload(hits));
+        } else {
+          fs.writeFileSync(this._queuePath, '');
+          output = hits;
+        }
+        return output;
       } catch (err) {
         if (err.code === 'ENOENT') {
-          return '';
+          return [];
         } else {
           throw err;
         }
@@ -208,7 +221,7 @@ var UsageStats = function () {
   }, {
     key: '_enqueue',
     value: function _enqueue(hits) {
-      fs.appendFileSync(this._queuePath, arrayToLines(hits));
+      fs.appendFileSync(this._queuePath, createHitsPayload(hits));
     }
   }, {
     key: '_getScreenResolution',
@@ -226,7 +239,7 @@ function postData(form) {
   }).join('&');
 }
 
-function arrayToLines(array) {
+function createHitsPayload(array) {
   var output = array.join(os.EOL);
   if (output) output += os.EOL;
   return output;
