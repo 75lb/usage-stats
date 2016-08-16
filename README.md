@@ -1,6 +1,7 @@
 [![view on npm](http://img.shields.io/npm/v/usage-stats.svg)](https://www.npmjs.org/package/usage-stats)
 [![npm module downloads](http://img.shields.io/npm/dt/usage-stats.svg)](https://www.npmjs.org/package/usage-stats)
 [![Build Status](https://travis-ci.org/75lb/usage-stats.svg?branch=master)](https://travis-ci.org/75lb/usage-stats)
+[![Coverage Status](https://coveralls.io/repos/github/75lb/usage-stats/badge.svg?branch=master)](https://coveralls.io/github/75lb/usage-stats?branch=master)
 [![Dependency Status](https://david-dm.org/75lb/usage-stats.svg)](https://david-dm.org/75lb/usage-stats)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](https://github.com/feross/standard)
 
@@ -48,7 +49,7 @@ Beside tracking events, exceptions and screenviews, the follow stats are collect
 * Node.js version (sent as App ID)
 * User ID (a random UUID, generated once per OS user and stored)
 * Language (`process.env.LANG`, if set)
-* OS version
+* OS version (sent as App Installer ID)
 * Terminal resolution (rows by columns)
 
 ## API Reference
@@ -60,7 +61,9 @@ const UsageStats = require('usage-stats')
 
 * [usage-stats](#module_usage-stats)
     * [UsageStats](#exp_module_usage-stats--UsageStats) ⏏
-        * [new UsageStats([options])](#new_module_usage-stats--UsageStats_new)
+        * [new UsageStats(trackingId, [options])](#new_module_usage-stats--UsageStats_new)
+        * [._dir](#module_usage-stats--UsageStats.UsageStats+_dir) : <code>string</code>
+        * [._queuePath](#module_usage-stats--UsageStats.UsageStats+_queuePath) : <code>string</code>
         * [.start()](#module_usage-stats--UsageStats+start) ↩︎
         * [.end()](#module_usage-stats--UsageStats+end) ↩︎
         * [.disable()](#module_usage-stats--UsageStats+disable) ↩︎
@@ -70,6 +73,9 @@ const UsageStats = require('usage-stats')
         * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ↩︎
         * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
         * [._getClientId()](#module_usage-stats--UsageStats+_getClientId) ⇒ <code>string</code>
+        * [._request()](#module_usage-stats--UsageStats+_request) ⇒ <code>Promise</code>
+        * [._dequeue()](#module_usage-stats--UsageStats+_dequeue) ⇒ <code>Array.&lt;string&gt;</code>
+        * [._enqueue()](#module_usage-stats--UsageStats+_enqueue)
 
 <a name="exp_module_usage-stats--UsageStats"></a>
 
@@ -77,14 +83,16 @@ const UsageStats = require('usage-stats')
 **Kind**: Exported class  
 <a name="new_module_usage-stats--UsageStats_new"></a>
 
-#### new UsageStats([options])
+#### new UsageStats(trackingId, [options])
 
 | Param | Type | Description |
 | --- | --- | --- |
+| trackingId | <code>string</code> | Google Analytics tracking ID |
 | [options] | <code>object</code> |  |
 | [options.appName] | <code>string</code> | App name |
 | [options.version] | <code>string</code> | App version |
-| [options.tid] | <code>string</code> | Google Analytics tracking ID |
+| [options.lang] | <code>string</code> | Language. Defaults to `process.env.LANG`. |
+| [options.sr] | <code>string</code> | Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`. |
 
 **Example**  
 ```js
@@ -94,6 +102,18 @@ const usageStats = new UsageStats({
   tid: 'UA-98765432-1'
 })
 ```
+<a name="module_usage-stats--UsageStats.UsageStats+_dir"></a>
+
+#### usageStats._dir : <code>string</code>
+Temporary directory for persisting the clientID and queue.
+
+**Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+<a name="module_usage-stats--UsageStats.UsageStats+_queuePath"></a>
+
+#### usageStats._queuePath : <code>string</code>
+Queue path.
+
+**Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats+start"></a>
 
 #### usageStats.start() ↩︎
@@ -132,8 +152,8 @@ Track an event. All event hits are queued until `.send()` is called.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| category | <code>string</code> | Event category |
-| action | <code>string</code> | Event action |
+| category | <code>string</code> | Event category (required). |
+| action | <code>string</code> | Event action (required). |
 | [label] | <code>string</code> | Event label |
 | [value] | <code>string</code> | Event value |
 
@@ -179,6 +199,23 @@ Send queued stats using as few requests as possible (typically a single request 
 #### usageStats._getClientId() ⇒ <code>string</code>
 Must return a v4 UUID.
 
+**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+<a name="module_usage-stats--UsageStats+_request"></a>
+
+#### usageStats._request() ⇒ <code>Promise</code>
+The request method used internally, can be overridden for testing or other purpose. Takes a node-style request options object in. Must return a promise.
+
+**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Fulfil**: `{ res: <node response object>, data: <Buffer payload> }`  
+<a name="module_usage-stats--UsageStats+_dequeue"></a>
+
+#### usageStats._dequeue() ⇒ <code>Array.&lt;string&gt;</code>
+Sync function, returns hits queued.
+
+**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+<a name="module_usage-stats--UsageStats+_enqueue"></a>
+
+#### usageStats._enqueue()
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 
 * * *

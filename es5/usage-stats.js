@@ -4,32 +4,38 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var request = require('req-then');
 var path = require('path');
 var os = require('os');
 var fs = require('fs');
 
 var UsageStats = function () {
-  function UsageStats(options) {
+  function UsageStats(trackingId, options) {
     _classCallCheck(this, UsageStats);
 
+    if (!trackingId) throw new Error('a Google Analytics TrackingID is required');
     options = options || {};
+
     this._dir = path.resolve(os.tmpdir(), 'usage-stats');
-    this._queuePath = path.resolve(this._dir, 'queue');
-    this._appName = options.appName;
-    this._version = options.version;
+
+    try {
+      fs.mkdirSync(this._dir);
+    } catch (err) {}
+
+    this._queuePath = path.resolve(this._dir, 'queue.json');
     this._disabled = false;
-    this._cid = this._getClientId();
+    this._hits = [];
     this._defaults = {
       v: 1,
-      tid: options.tid,
-      cid: this._cid,
+      tid: trackingId,
       ds: 'app',
-      ul: process.env.LANG,
-      ua: 'jsdoc2md/' + options.version + ' (' + os.type() + '; ' + os.release() + ')',
-      sr: process.stdout.rows && process.stdout.columns ? process.stdout.rows + 'x' + process.stdout.columns : 'N/A'
+      cid: this._getClientId(),
+      ul: options.lang || process.env.LANG,
+      sr: options.sr || this._getScreenResolution(),
+      an: options.appName || '',
+      av: options.version || '',
+      aid: process.version,
+      aiid: os.type() + '; ' + os.release()
     };
-    this._hits = [];
   }
 
   _createClass(UsageStats, [{
@@ -62,6 +68,7 @@ var UsageStats = function () {
     key: 'event',
     value: function event(category, action, label, value) {
       if (this._disabled) return this;
+      if (!(category && action)) throw new Error('category and action required');
       var t = require('typical');
       var form = Object.assign({}, this._defaults, {
         t: 'event',
@@ -83,9 +90,6 @@ var UsageStats = function () {
       if (this._disabled) return this;
       var form = Object.assign({}, this._defaults, {
         t: 'screenview',
-        an: this._appName,
-        av: this._version,
-        aid: process.version,
         cd: name
       });
       if (this._sessionStarted) {
@@ -112,16 +116,10 @@ var UsageStats = function () {
     value: function send(options) {
       var _this = this;
 
-      options = options || {};
       if (this._disabled) return this;
-      var queued = '';
-      try {
-        queued = fs.readFileSync(this._queuePath, 'utf8');
-        fs.unlinkSync(this._queuePath);
-      } catch (err) {
-        if (err.code !== 'ENOENT') throw err;
-      }
-      var lines = queued ? queued.trim().split('\n').concat(this._hits) : this._hits.slice(0);
+      options = options || {};
+      var queued = this._getQueued();
+      var lines = queued ? queued.trim().split(os.EOL).concat(this._hits) : this._hits.slice(0);
       this._hits.length = 0;
 
       var url = require('url');
@@ -129,29 +127,36 @@ var UsageStats = function () {
       if (options.debug) {
         var reqOptions = url.parse('https://www.google-analytics.com/debug/collect');
         reqOptions.method = 'POST';
-        var hits = lines.join('\n') + '\n';
-        return request(reqOptions, hits).then(function (response) {
+        var hits = lines.join(os.EOL) + os.EOL;
+        return this._request(reqOptions, hits).then(function (response) {
           var output = {
             hits: lines,
             result: JSON.parse(response.data.toString())
           };
           return JSON.stringify(output, null, '  ');
+        }).catch(function (err) {
+          if (err.code === 'ENOENT') {
+            return {
+              hits: lines,
+              result: '<offline>'
+            };
+          } else {
+            throw err;
+          }
         });
       } else {
         var _loop = function _loop() {
-          var batch = lines.splice(0, 20).join('\n') + '\n';
+          var batchLines = lines.splice(0, 20);
           var reqOptions = url.parse('http://www.google-analytics.com/batch');
           reqOptions.method = 'POST';
-          var req = request(reqOptions, batch).catch(function (err) {
-            try {
-              fs.appendFileSync(_this._queuePath, batch);
-            } catch (err) {
-              if (err.code !== 'ENOENT') throw err;
-              try {
-                fs.mkdirSync(_this._dir);
-              } catch (err) {}
-              fs.appendFileSync(_this._queuePath, batch);
+          var req = _this._request(reqOptions, batchLines.join(os.EOL) + os.EOL).then(function (response) {
+            if (response.res.statusCode >= 300) {
+              throw new Error('Unexpected response');
+            } else {
+              return response;
             }
+          }).catch(function (err) {
+            _this._enqueue(batchLines);
           });
           requests.push(req);
         };
@@ -173,12 +178,42 @@ var UsageStats = function () {
       } catch (err) {
         if (err.code !== 'ENOENT') throw err;
         cid = uuid.v4();
-        try {
-          fs.mkdirSync(this._dir);
-        } catch (err) {}
         fs.writeFileSync(cidPath, cid);
       }
       return cid;
+    }
+  }, {
+    key: '_request',
+    value: function _request(reqOptions) {
+      var request = require('req-then');
+      return request(reqOptions);
+    }
+  }, {
+    key: '_dequeue',
+    value: function _dequeue(count) {
+      try {
+        var queue = fs.readFileSync(this._queuePath, 'utf8');
+        var hits = queue.trim().split(os.EOL);
+        var output = hits.splice(0, count);
+        fs.writeFileSync(this._queuePath, arrayToLines(hits));
+        return arrayToLines(output);
+      } catch (err) {
+        if (err.code === 'ENOENT') {
+          return '';
+        } else {
+          throw err;
+        }
+      }
+    }
+  }, {
+    key: '_enqueue',
+    value: function _enqueue(hits) {
+      fs.appendFileSync(this._queuePath, arrayToLines(hits));
+    }
+  }, {
+    key: '_getScreenResolution',
+    value: function _getScreenResolution() {
+      return process.stdout.rows && process.stdout.columns ? process.stdout.rows + 'x' + process.stdout.columns : 'N/A';
     }
   }]);
 
@@ -189,6 +224,12 @@ function postData(form) {
   return Object.keys(form).map(function (key) {
     return key + '=' + encodeURI(form[key]);
   }).join('&');
+}
+
+function arrayToLines(array) {
+  var output = array.join(os.EOL);
+  if (output) output += os.EOL;
+  return output;
 }
 
 module.exports = UsageStats;
