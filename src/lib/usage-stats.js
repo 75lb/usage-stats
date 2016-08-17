@@ -23,13 +23,14 @@ class UsageStats {
   /**
    * @param {string} - Google Analytics tracking ID (required).
    * @param [options] {object}
-   * @param [options.appName] {string} - App name
+   * @param [options.name] {string} - App name
    * @param [options.version] {string} - App version
    * @param [options.lang] {string} - Language. Defaults to `process.env.LANG`.
    * @param [options.sr] {string} - Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`.
+   * @param [options.dir] {string} - Path of the directory used for persisting clientID and queue.
    * @example
    * const usageStats = new UsageStats('UA-98765432-1', {
-   *   appName: 'sick app',
+   *   name: 'sick app',
    *   version: '1.0.0'
    * })
    */
@@ -41,34 +42,47 @@ class UsageStats {
      * Absolute path of the temporary directory used for persisting clientID and queue.
      * @type {string}
      */
-    this._dir = path.resolve(os.tmpdir(), 'usage-stats')
-
-    try {
-      fs.mkdirSync(this._dir)
-    } catch (err) {
-      // exists
-    }
+    this.dir = options.dir || path.resolve(os.tmpdir(), 'usage-stats')
 
     /**
      * The absolute path of the queue.
      * @type {string}
      */
-    this._queuePath = path.resolve(this._dir, 'queue.json')
+    this._queuePath = path.resolve(this.dir, 'queue')
     this._disabled = false
     this._hits = []
+    let ua = 'Mozilla/5.0 '
+    if (os.platform() === 'win32') {
+      ua += `(Windows NT ${os.release()})`
+    } else if (os.platform() === 'darwin') {
+      ua += `(Macintosh; ${os.release()})`
+    } else if (os.platform() === 'linux') {
+      ua += `(X11; Linux ${os.release()})`
+    }
     this._defaults = {
       v: 1,
       tid: trackingId,
       ds: 'app',
       cid: this._getClientId(),
+      ua: ua,
       ul: options.lang || process.env.LANG,
       sr: options.sr || this._getScreenResolution(),
-      an: options.appName || '',
+      an: options.name || '',
       av: options.version || '',
       aid: process.version,
       aiid: `${os.type()}; ${os.release()}`
     }
   }
+
+  get dir () {
+    return this._dir
+  }
+  set dir (val) {
+    this._dir = val
+    const mkdirp = require('mkdirp')
+    mkdirp.sync(this._dir)
+  }
+
   /**
    * Starts the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
    * @chainable
@@ -190,11 +204,10 @@ class UsageStats {
     if (options.debug) {
       const reqOptions = url.parse(gaUrl.debug)
       reqOptions.method = 'POST'
-      const hits = this._dequeue()
-      return this._request(reqOptions, hits)
+      return this._request(reqOptions, createHitsPayload(toSend))
         .then(response => {
           const output = {
-            hits: lines,
+            hits: toSend,
             result: JSON.parse(response.data.toString())
           }
           return JSON.stringify(output, null, '  ')
@@ -202,7 +215,7 @@ class UsageStats {
         .catch(err => {
           if (err.code === 'ENOENT') {
             return {
-              hits: lines,
+              hits: toSend,
               result: '<offline>'
             }
           } else {
@@ -238,7 +251,7 @@ class UsageStats {
   _getClientId () {
     let cid = null
     const uuid = require('node-uuid')
-    const cidPath = path.resolve(this._dir, 'cid')
+    const cidPath = path.resolve(this.dir, 'cid')
     try {
       cid = fs.readFileSync(cidPath, 'utf8')
     } catch (err) {
@@ -251,12 +264,16 @@ class UsageStats {
 
   /**
    * The request method used internally, can be overridden for testing or other purpose. Takes a node-style request options object in. Must return a promise.
+   * @param {object}
+   * @param [data] {*}
    * @returns {Promise}
    * @fulfil `{ res: <node response object>, data: <Buffer payload> }`
    */
-  _request (reqOptions) {
+  _request (reqOptions, data) {
     const request = require('req-then')
-    return request(reqOptions)
+    // console.error(reqOptions)
+    // console.error(data)
+    return request(reqOptions, data)
   }
 
   /**

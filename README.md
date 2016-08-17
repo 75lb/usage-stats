@@ -13,10 +13,9 @@ A minimal, offline-friendly [Google Analytics Measurement Protocol](https://deve
 
 ```js
 const UsageStats = require('usage-stats')
-const usageStats = new UsageStats({
+const usageStats = new UsageStats('UA-98765432-1', {
   appName: 'sick app',
-  version: '1.0.0',
-  tid: 'UA-98765432-1'
+  version: '1.0.0'
 })
 
 // start a new session
@@ -62,7 +61,7 @@ const UsageStats = require('usage-stats')
 * [usage-stats](#module_usage-stats)
     * [UsageStats](#exp_module_usage-stats--UsageStats) ⏏
         * [new UsageStats(trackingId, [options])](#new_module_usage-stats--UsageStats_new)
-        * [._dir](#module_usage-stats--UsageStats.UsageStats+_dir) : <code>string</code>
+        * [.dir](#module_usage-stats--UsageStats.UsageStats+dir) : <code>string</code>
         * [._queuePath](#module_usage-stats--UsageStats.UsageStats+_queuePath) : <code>string</code>
         * [.start()](#module_usage-stats--UsageStats+start) ↩︎
         * [.end()](#module_usage-stats--UsageStats+end) ↩︎
@@ -73,7 +72,7 @@ const UsageStats = require('usage-stats')
         * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ↩︎
         * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
         * [._getClientId()](#module_usage-stats--UsageStats+_getClientId) ⇒ <code>string</code>
-        * [._request()](#module_usage-stats--UsageStats+_request) ⇒ <code>Promise</code>
+        * [._request(reqOptions, [data])](#module_usage-stats--UsageStats+_request) ⇒ <code>Promise</code>
         * [._dequeue([count])](#module_usage-stats--UsageStats+_dequeue) ⇒ <code>Array.&lt;string&gt;</code>
         * [._enqueue(hits)](#module_usage-stats--UsageStats+_enqueue)
 
@@ -89,21 +88,22 @@ const UsageStats = require('usage-stats')
 | --- | --- | --- |
 | trackingId | <code>string</code> | Google Analytics tracking ID (required). |
 | [options] | <code>object</code> |  |
-| [options.appName] | <code>string</code> | App name |
+| [options.name] | <code>string</code> | App name |
 | [options.version] | <code>string</code> | App version |
 | [options.lang] | <code>string</code> | Language. Defaults to `process.env.LANG`. |
 | [options.sr] | <code>string</code> | Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`. |
+| [options.dir] | <code>string</code> | Path of the directory used for persisting clientID and queue. |
 
 **Example**  
 ```js
 const usageStats = new UsageStats('UA-98765432-1', {
-  appName: 'sick app',
+  name: 'sick app',
   version: '1.0.0'
 })
 ```
-<a name="module_usage-stats--UsageStats.UsageStats+_dir"></a>
+<a name="module_usage-stats--UsageStats.UsageStats+dir"></a>
 
-#### usageStats._dir : <code>string</code>
+#### usageStats.dir : <code>string</code>
 Absolute path of the temporary directory used for persisting clientID and queue.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
@@ -203,11 +203,17 @@ Must return a v4 UUID.
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats+_request"></a>
 
-#### usageStats._request() ⇒ <code>Promise</code>
+#### usageStats._request(reqOptions, [data]) ⇒ <code>Promise</code>
 The request method used internally, can be overridden for testing or other purpose. Takes a node-style request options object in. Must return a promise.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Fulfil**: `{ res: <node response object>, data: <Buffer payload> }`  
+
+| Param | Type |
+| --- | --- |
+| reqOptions | <code>object</code> | 
+| [data] | <code>\*</code> | 
+
 <a name="module_usage-stats--UsageStats+_dequeue"></a>
 
 #### usageStats._dequeue([count]) ⇒ <code>Array.&lt;string&gt;</code>

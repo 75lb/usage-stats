@@ -21,23 +21,28 @@ var UsageStats = function () {
     if (!trackingId) throw new Error('a Google Analytics TrackingID is required');
     options = options || {};
 
-    this._dir = path.resolve(os.tmpdir(), 'usage-stats');
+    this.dir = options.dir || path.resolve(os.tmpdir(), 'usage-stats');
 
-    try {
-      fs.mkdirSync(this._dir);
-    } catch (err) {}
-
-    this._queuePath = path.resolve(this._dir, 'queue.json');
+    this._queuePath = path.resolve(this.dir, 'queue');
     this._disabled = false;
     this._hits = [];
+    var ua = 'Mozilla/5.0 ';
+    if (os.platform() === 'win32') {
+      ua += '(Windows NT ' + os.release() + ')';
+    } else if (os.platform() === 'darwin') {
+      ua += '(Macintosh; ' + os.release() + ')';
+    } else if (os.platform() === 'linux') {
+      ua += '(X11; Linux ' + os.release() + ')';
+    }
     this._defaults = {
       v: 1,
       tid: trackingId,
       ds: 'app',
       cid: this._getClientId(),
+      ua: ua,
       ul: options.lang || process.env.LANG,
       sr: options.sr || this._getScreenResolution(),
-      an: options.appName || '',
+      an: options.name || '',
       av: options.version || '',
       aid: process.version,
       aiid: os.type() + '; ' + os.release()
@@ -133,17 +138,16 @@ var UsageStats = function () {
       if (options.debug) {
         var reqOptions = url.parse(gaUrl.debug);
         reqOptions.method = 'POST';
-        var hits = this._dequeue();
-        return this._request(reqOptions, hits).then(function (response) {
+        return this._request(reqOptions, createHitsPayload(toSend)).then(function (response) {
           var output = {
-            hits: lines,
+            hits: toSend,
             result: JSON.parse(response.data.toString())
           };
           return JSON.stringify(output, null, '  ');
         }).catch(function (err) {
           if (err.code === 'ENOENT') {
             return {
-              hits: lines,
+              hits: toSend,
               result: '<offline>'
             };
           } else {
@@ -179,7 +183,7 @@ var UsageStats = function () {
     value: function _getClientId() {
       var cid = null;
       var uuid = require('node-uuid');
-      var cidPath = path.resolve(this._dir, 'cid');
+      var cidPath = path.resolve(this.dir, 'cid');
       try {
         cid = fs.readFileSync(cidPath, 'utf8');
       } catch (err) {
@@ -191,9 +195,10 @@ var UsageStats = function () {
     }
   }, {
     key: '_request',
-    value: function _request(reqOptions) {
+    value: function _request(reqOptions, data) {
       var request = require('req-then');
-      return request(reqOptions);
+
+      return request(reqOptions, data);
     }
   }, {
     key: '_dequeue',
@@ -227,6 +232,16 @@ var UsageStats = function () {
     key: '_getScreenResolution',
     value: function _getScreenResolution() {
       return process.stdout.rows && process.stdout.columns ? process.stdout.rows + 'x' + process.stdout.columns : 'N/A';
+    }
+  }, {
+    key: 'dir',
+    get: function get() {
+      return this._dir;
+    },
+    set: function set(val) {
+      this._dir = val;
+      var mkdirp = require('mkdirp');
+      mkdirp.sync(this._dir);
     }
   }]);
 

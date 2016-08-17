@@ -15,10 +15,10 @@ var fs = require('fs');
 var path = require('path');
 var os = require('os');
 
-var tmpPath = path.resolve(__dirname, '../../', 'tmp');
+var tmpPath = path.resolve(__dirname, '../../tmp/test');
 var pathCount = 0;
-function getQueuePath() {
-  return path.resolve(tmpPath, 'queue' + pathCount++);
+function getCacheDir() {
+  return path.resolve(tmpPath, 'test' + pathCount++);
 }
 
 try {
@@ -55,8 +55,7 @@ test('.event() validation', function () {
 });
 
 test('._enqueue(hits)', function () {
-  var testStats = new UsageStats('UA-00000000-0');
-  testStats._queuePath = getQueuePath();
+  var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() });
   fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2']);
   testStats._enqueue(['hit3']);
@@ -66,8 +65,7 @@ test('._enqueue(hits)', function () {
 });
 
 test('._dequeue(count)', function () {
-  var testStats = new UsageStats('UA-00000000-0');
-  testStats._queuePath = getQueuePath();
+  var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() });
   fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2', 'hit3', 'hit4']);
 
@@ -92,7 +90,6 @@ test('successful send, nothing queued', function () {
 
       var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
 
-      _this._queuePath = getQueuePath();
       fs.writeFileSync(_this._queuePath, '');
       return _this;
     }
@@ -107,7 +104,7 @@ test('successful send, nothing queued', function () {
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0');
+  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
@@ -116,8 +113,6 @@ test('successful send, nothing queued', function () {
 });
 
 test('failed send, something queued', function () {
-  var plan = 0;
-
   var UsageTest = function (_UsageStats2) {
     _inherits(UsageTest, _UsageStats2);
 
@@ -126,7 +121,6 @@ test('failed send, something queued', function () {
 
       var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
 
-      _this2._queuePath = getQueuePath();
       fs.writeFileSync(_this2._queuePath, '');
       return _this2;
     }
@@ -141,7 +135,7 @@ test('failed send, something queued', function () {
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0');
+  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
@@ -149,7 +143,22 @@ test('failed send, something queued', function () {
   });
 });
 
-test('successful send with something queued', function () {
+test('.send() screenview (live)', function () {
+  var testStats = new UsageStats('UA-70853320-3', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: getCacheDir()
+  });
+
+  testStats.screenView(this.name);
+  return testStats.send().then(function (responses) {
+    return responses.map(function (response) {
+      return response.data;
+    });
+  });
+});
+
+test.skip('successful send with something queued', function () {
   var UsageTest = function (_UsageStats3) {
     _inherits(UsageTest, _UsageStats3);
 
@@ -158,7 +167,6 @@ test('successful send with something queued', function () {
 
       var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
 
-      _this3._queuePath = getQueuePath();
       fs.writeFileSync(_this3._queuePath, 'test=something-queued\n');
       return _this3;
     }
@@ -176,7 +184,12 @@ test('successful send with something queued', function () {
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0');
+  var testStats = new UsageStats('UA-70853320-3', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: getCacheDir()
+  });
+
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();

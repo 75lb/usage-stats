@@ -13,10 +13,9 @@ A minimal, offline-friendly [Google Analytics Measurement Protocol](https://deve
 
 ```js
 const UsageStats = require('usage-stats')
-const usageStats = new UsageStats({
+const usageStats = new UsageStats('UA-98765432-1', {
   appName: 'sick app',
-  version: '1.0.0',
-  tid: 'UA-98765432-1'
+  version: '1.0.0'
 })
 
 // start a new session

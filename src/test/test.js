@@ -6,10 +6,10 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 
-const tmpPath = path.resolve(__dirname, '../../', 'tmp')
+const tmpPath = path.resolve(__dirname, '../../tmp/test')
 let pathCount = 0
-function getQueuePath () {
-  return path.resolve(tmpPath, 'queue' + pathCount++)
+function getCacheDir () {
+  return path.resolve(tmpPath, 'test' + pathCount++)
 }
 
 try {
@@ -48,8 +48,7 @@ test('.event() validation', function () {
 })
 
 test('._enqueue(hits)', function () {
-  const testStats = new UsageStats('UA-00000000-0')
-  testStats._queuePath = getQueuePath()
+  const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() })
   fs.writeFileSync(testStats._queuePath, '')
   testStats._enqueue([ 'hit1', 'hit2' ])
   testStats._enqueue([ 'hit3' ])
@@ -59,8 +58,7 @@ test('._enqueue(hits)', function () {
 })
 
 test('._dequeue(count)', function () {
-  const testStats = new UsageStats('UA-00000000-0')
-  testStats._queuePath = getQueuePath()
+  const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() })
   fs.writeFileSync(testStats._queuePath, '')
   testStats._enqueue([ 'hit1', 'hit2', 'hit3', 'hit4' ])
 
@@ -80,7 +78,6 @@ test('successful send, nothing queued', function () {
   class UsageTest extends UsageStats {
     constructor (tid, options) {
       super(tid, options)
-      this._queuePath = getQueuePath()
       fs.writeFileSync(this._queuePath, '')
     }
     _request (reqOptions, data) {
@@ -88,7 +85,7 @@ test('successful send, nothing queued', function () {
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0')
+  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() })
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
@@ -98,12 +95,9 @@ test('successful send, nothing queued', function () {
 })
 
 test('failed send, something queued', function () {
-  const plan = 0
-
   class UsageTest extends UsageStats {
     constructor (tid, options) {
       super(tid, options)
-      this._queuePath = getQueuePath()
       fs.writeFileSync(this._queuePath, '')
     }
     _request (reqOptions, data) {
@@ -111,7 +105,7 @@ test('failed send, something queued', function () {
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0')
+  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() })
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
@@ -120,11 +114,24 @@ test('failed send, something queued', function () {
     })
 })
 
-test('successful send with something queued', function () {
+test('.send() screenview (live)', function () {
+  const testStats = new UsageStats('UA-70853320-3', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: getCacheDir()
+  })
+
+  testStats.screenView(this.name)
+  return testStats.send()
+    .then(responses => {
+      return responses.map(response => response.data)
+    })
+})
+
+test.skip('successful send with something queued', function () {
   class UsageTest extends UsageStats {
     constructor (tid, options) {
       super(tid, options)
-      this._queuePath = getQueuePath()
       fs.writeFileSync(this._queuePath, 'test=something-queued\n')
     }
     _request (reqOptions, data) {
@@ -135,7 +142,12 @@ test('successful send with something queued', function () {
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0')
+  const testStats = new UsageStats('UA-70853320-3', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: getCacheDir()
+  })
+
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
