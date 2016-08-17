@@ -38,10 +38,6 @@ class UsageStats {
     if (!trackingId) throw new Error('a Google Analytics TrackingID is required')
     options = options || {}
 
-    /**
-     * Absolute path of the temporary directory used for persisting clientID and queue.
-     * @type {string}
-     */
     this.dir = options.dir || path.resolve(os.tmpdir(), 'usage-stats')
 
     this._queuePath = path.resolve(this.dir, 'queue')
@@ -243,6 +239,7 @@ class UsageStats {
   /**
    * Must return a v4 UUID.
    * @returns {string}
+   * @private
    */
   _getClientId () {
     let cid = null
@@ -264,6 +261,7 @@ class UsageStats {
    * @param [data] {*}
    * @returns {Promise}
    * @fulfil `{ res: <node response object>, data: <Buffer payload> }`
+   * @private
    */
   _request (reqOptions, data) {
     const request = require('req-then')
@@ -276,6 +274,7 @@ class UsageStats {
    * Returns hits queued.
    * @param [count] {number} - Number of hits to dequeue. Defaults to "all hits".
    * @return {string[]}
+   * @private
    */
   _dequeue (count) {
     try {
@@ -302,6 +301,7 @@ class UsageStats {
 
   /**
    * @param {string[]}
+   * @private
    */
   _enqueue (hits) {
     fs.appendFileSync(this._queuePath, createHitsPayload(hits))

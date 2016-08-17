@@ -61,7 +61,6 @@ const UsageStats = require('usage-stats')
 * [usage-stats](#module_usage-stats)
     * [UsageStats](#exp_module_usage-stats--UsageStats) ⏏
         * [new UsageStats(trackingId, [options])](#new_module_usage-stats--UsageStats_new)
-        * [.dir](#module_usage-stats--UsageStats.UsageStats+dir) : <code>string</code>
         * [.start()](#module_usage-stats--UsageStats+start) ↩︎
         * [.end()](#module_usage-stats--UsageStats+end) ↩︎
         * [.disable()](#module_usage-stats--UsageStats+disable) ↩︎
@@ -70,10 +69,6 @@ const UsageStats = require('usage-stats')
         * [.screenView(name)](#module_usage-stats--UsageStats+screenView) ↩︎
         * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ↩︎
         * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
-        * [._getClientId()](#module_usage-stats--UsageStats+_getClientId) ⇒ <code>string</code>
-        * [._request(reqOptions, [data])](#module_usage-stats--UsageStats+_request) ⇒ <code>Promise</code>
-        * [._dequeue([count])](#module_usage-stats--UsageStats+_dequeue) ⇒ <code>Array.&lt;string&gt;</code>
-        * [._enqueue(hits)](#module_usage-stats--UsageStats+_enqueue)
 
 <a name="exp_module_usage-stats--UsageStats"></a>
 
@@ -100,12 +95,6 @@ const usageStats = new UsageStats('UA-98765432-1', {
   version: '1.0.0'
 })
 ```
-<a name="module_usage-stats--UsageStats.UsageStats+dir"></a>
-
-#### usageStats.dir : <code>string</code>
-Absolute path of the temporary directory used for persisting clientID and queue.
-
-**Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats+start"></a>
 
 #### usageStats.start() ↩︎
@@ -187,45 +176,6 @@ Send queued stats using as few requests as possible (typically a single request 
 | --- | --- | --- |
 | [options] | <code>object</code> |  |
 | [options.debug] | <code>boolean</code> | [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result. |
-
-<a name="module_usage-stats--UsageStats+_getClientId"></a>
-
-#### usageStats._getClientId() ⇒ <code>string</code>
-Must return a v4 UUID.
-
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
-<a name="module_usage-stats--UsageStats+_request"></a>
-
-#### usageStats._request(reqOptions, [data]) ⇒ <code>Promise</code>
-The request method used internally, can be overridden for testing or other purpose. Takes a node-style request options object in. Must return a promise.
-
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
-**Fulfil**: `{ res: <node response object>, data: <Buffer payload> }`  
-
-| Param | Type |
-| --- | --- |
-| reqOptions | <code>object</code> | 
-| [data] | <code>\*</code> | 
-
-<a name="module_usage-stats--UsageStats+_dequeue"></a>
-
-#### usageStats._dequeue([count]) ⇒ <code>Array.&lt;string&gt;</code>
-Returns hits queued.
-
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [count] | <code>number</code> | Number of hits to dequeue. Defaults to "all hits". |
-
-<a name="module_usage-stats--UsageStats+_enqueue"></a>
-
-#### usageStats._enqueue(hits)
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
-
-| Param | Type |
-| --- | --- |
-| hits | <code>Array.&lt;string&gt;</code> | 
 
 
 * * *
