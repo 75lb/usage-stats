@@ -14,7 +14,7 @@ A minimal, offline-friendly [Google Analytics Measurement Protocol](https://deve
 ```js
 const UsageStats = require('usage-stats')
 const usageStats = new UsageStats('UA-98765432-1', {
-  appName: 'sick app',
+  name: 'sick app',
   version: '1.0.0'
 })
 
@@ -43,13 +43,13 @@ usageStats.end().send()
 
 Beside tracking events, exceptions and screenviews, the follow stats are collected each session.
 
-* App name
-* App version
-* Node.js version (sent as App ID)
-* User ID (a random UUID, generated once per OS user and stored)
-* Language (`process.env.LANG`, if set)
-* OS version (sent as App Installer ID)
-* Terminal resolution (rows by columns)
+* [App name](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#an)
+* [App version](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#av)
+* Node.js version (sent as [App ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#aid))
+* Operating System version (sent in [App Installer ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#aiid) and [User Agent](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ua))
+* [Client ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#cid) (a random UUID, generated once per OS user and stored)
+* [Language](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ul) (`process.env.LANG`, if set)
+* [Screen resolution](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sr) (terminal rows by columns, by default)
 
 ## API Reference
 
@@ -62,7 +62,6 @@ const UsageStats = require('usage-stats')
     * [UsageStats](#exp_module_usage-stats--UsageStats) ⏏
         * [new UsageStats(trackingId, [options])](#new_module_usage-stats--UsageStats_new)
         * [.dir](#module_usage-stats--UsageStats.UsageStats+dir) : <code>string</code>
-        * [._queuePath](#module_usage-stats--UsageStats.UsageStats+_queuePath) : <code>string</code>
         * [.start()](#module_usage-stats--UsageStats+start) ↩︎
         * [.end()](#module_usage-stats--UsageStats+end) ↩︎
         * [.disable()](#module_usage-stats--UsageStats+disable) ↩︎
@@ -105,12 +104,6 @@ const usageStats = new UsageStats('UA-98765432-1', {
 
 #### usageStats.dir : <code>string</code>
 Absolute path of the temporary directory used for persisting clientID and queue.
-
-**Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
-<a name="module_usage-stats--UsageStats.UsageStats+_queuePath"></a>
-
-#### usageStats._queuePath : <code>string</code>
-The absolute path of the queue.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats+start"></a>

@@ -44,10 +44,6 @@ class UsageStats {
      */
     this.dir = options.dir || path.resolve(os.tmpdir(), 'usage-stats')
 
-    /**
-     * The absolute path of the queue.
-     * @type {string}
-     */
     this._queuePath = path.resolve(this.dir, 'queue')
     this._disabled = false
     this._hits = []
