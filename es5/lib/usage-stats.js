@@ -139,11 +139,11 @@ var UsageStats = function () {
         var reqOptions = url.parse(gaUrl.debug);
         reqOptions.method = 'POST';
         return this._request(reqOptions, createHitsPayload(toSend)).then(function (response) {
-          var output = {
+          _this._enqueue(toSend);
+          return {
             hits: toSend,
             result: JSON.parse(response.data.toString())
           };
-          return JSON.stringify(output, null, '  ');
         }).catch(function (err) {
           if (err.code === 'ENOENT') {
             return {

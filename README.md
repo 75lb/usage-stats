@@ -21,13 +21,12 @@ const usageStats = new UsageStats('UA-98765432-1', {
 // start a new session
 usageStats.start()
 
-// user set an option..
+// user sets an option..
 usageStats.event('option', 'verbose-level', 'infinite')
 
-// app is running in 'encoding' mode..
-usageStats.screenView('encoding')
-
 try {
+  // register a hit on 'encoding mode'
+  usageStats.screenView('encoding')
   beginEncoding(options)
 } catch (err) {
   // exception tracking
@@ -39,7 +38,7 @@ try {
 usageStats.end().send()
 ```
 
-## List of stats sent
+## List of metrics sent
 
 Beside tracking events, exceptions and screenviews, the follow stats are collected each session.
 

@@ -5,11 +5,13 @@ const a = require('core-assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const rimraf = require('rimraf')
 
 const tmpPath = path.resolve(__dirname, '../../tmp/test')
-let pathCount = 0
-function getCacheDir () {
-  return path.resolve(tmpPath, 'test' + pathCount++)
+function getCacheDir (index) {
+  const dir = path.resolve(tmpPath, 'test' + index)
+  rimraf.sync(dir)
+  return dir
 }
 
 try {
@@ -48,7 +50,7 @@ test('.event() validation', function () {
 })
 
 test('._enqueue(hits)', function () {
-  const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() })
+  const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) })
   fs.writeFileSync(testStats._queuePath, '')
   testStats._enqueue([ 'hit1', 'hit2' ])
   testStats._enqueue([ 'hit3' ])
@@ -58,7 +60,7 @@ test('._enqueue(hits)', function () {
 })
 
 test('._dequeue(count)', function () {
-  const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() })
+  const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) })
   fs.writeFileSync(testStats._queuePath, '')
   testStats._enqueue([ 'hit1', 'hit2', 'hit3', 'hit4' ])
 
@@ -85,7 +87,7 @@ test('successful send, nothing queued', function () {
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() })
+  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) })
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
@@ -105,7 +107,7 @@ test('failed send, something queued', function () {
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() })
+  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) })
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
@@ -118,7 +120,7 @@ test('.send() screenview (live)', function () {
   const testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: getCacheDir()
+    dir: getCacheDir(this.index)
   })
 
   testStats.screenView(this.name)
@@ -145,7 +147,7 @@ test.skip('successful send with something queued', function () {
   const testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: getCacheDir()
+    dir: getCacheDir(this.index)
   })
 
   testStats.screenView('test')

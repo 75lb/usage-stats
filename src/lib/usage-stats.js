@@ -194,15 +194,15 @@ class UsageStats {
     const url = require('url')
     const requests = []
     if (options.debug) {
+      this._enqueue(toSend)
       const reqOptions = url.parse(gaUrl.debug)
       reqOptions.method = 'POST'
       return this._request(reqOptions, createHitsPayload(toSend))
         .then(response => {
-          const output = {
+          return {
             hits: toSend,
             result: JSON.parse(response.data.toString())
           }
-          return JSON.stringify(output, null, '  ')
         })
         .catch(err => {
           if (err.code === 'ENOENT') {
@@ -275,6 +275,7 @@ class UsageStats {
    * @param [count] {number} - Number of hits to dequeue. Defaults to "all hits".
    * @return {string[]}
    * @private
+   * @sync
    */
   _dequeue (count) {
     try {
@@ -300,8 +301,10 @@ class UsageStats {
   }
 
   /**
-   * @param {string[]}
+   * Append an array of hits to the queue.
+   * @param {string[]} - Array of hits.
    * @private
+   * @sync
    */
   _enqueue (hits) {
     fs.appendFileSync(this._queuePath, createHitsPayload(hits))
@@ -329,3 +332,5 @@ function createHitsPayload (array) {
 }
 
 module.exports = UsageStats
+
+/* running jsdoc2m --debug offline, with a queue returns nothing and deletes the queue */

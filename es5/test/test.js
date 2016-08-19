@@ -14,11 +14,13 @@ var a = require('core-assert');
 var fs = require('fs');
 var path = require('path');
 var os = require('os');
+var rimraf = require('rimraf');
 
 var tmpPath = path.resolve(__dirname, '../../tmp/test');
-var pathCount = 0;
-function getCacheDir() {
-  return path.resolve(tmpPath, 'test' + pathCount++);
+function getCacheDir(index) {
+  var dir = path.resolve(tmpPath, 'test' + index);
+  rimraf.sync(dir);
+  return dir;
 }
 
 try {
@@ -55,7 +57,7 @@ test('.event() validation', function () {
 });
 
 test('._enqueue(hits)', function () {
-  var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() });
+  var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) });
   fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2']);
   testStats._enqueue(['hit3']);
@@ -65,7 +67,7 @@ test('._enqueue(hits)', function () {
 });
 
 test('._dequeue(count)', function () {
-  var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir() });
+  var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) });
   fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2', 'hit3', 'hit4']);
 
@@ -104,7 +106,7 @@ test('successful send, nothing queued', function () {
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() });
+  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
@@ -135,7 +137,7 @@ test('failed send, something queued', function () {
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir() });
+  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
@@ -147,7 +149,7 @@ test('.send() screenview (live)', function () {
   var testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: getCacheDir()
+    dir: getCacheDir(this.index)
   });
 
   testStats.screenView(this.name);
@@ -187,7 +189,7 @@ test.skip('successful send with something queued', function () {
   var testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: getCacheDir()
+    dir: getCacheDir(this.index)
   });
 
   testStats.screenView('test');
