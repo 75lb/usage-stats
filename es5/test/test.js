@@ -8,13 +8,14 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var test = require('test-runner');
+var TestRunner = require('test-runner');
 var UsageStats = require('../lib/usage-stats');
 var a = require('core-assert');
 var fs = require('fs');
 var path = require('path');
 var os = require('os');
 var rimraf = require('rimraf');
+var runner = new TestRunner();
 
 var tmpPath = path.resolve(__dirname, '../../tmp/test');
 function getCacheDir(index) {
@@ -27,13 +28,13 @@ try {
   fs.mkdirSync(tmpPath);
 } catch (err) {}
 
-test('trackingId required', function () {
+runner.test('trackingId required', function () {
   a.throws(function () {
     var testStats = new UsageStats();
   });
 });
 
-test('.screenview(name)', function () {
+runner.test('.screenview(name) creates hit', function () {
   var testStats = new UsageStats('UA-00000000-0');
   testStats.screenView('test-screen');
   a.strictEqual(testStats._hits.length, 1);
@@ -41,7 +42,7 @@ test('.screenview(name)', function () {
   a.ok(/&cd=test-screen/.test(testStats._hits[0]));
 });
 
-test('.event(category, action)', function () {
+runner.test('.event(category, action) creates hit', function () {
   var testStats = new UsageStats('UA-00000000-0');
   testStats.event('test-category', 'test-action');
   a.strictEqual(testStats._hits.length, 1);
@@ -49,16 +50,18 @@ test('.event(category, action)', function () {
   a.ok(/&ea=test-action/.test(testStats._hits[0]));
 });
 
-test('.event() validation', function () {
+runner.test('.event() validation', function () {
   var testStats = new UsageStats('UA-00000000-0');
   a.throws(function () {
     testStats.event('test-category');
   });
+  a.throws(function () {
+    testStats.event();
+  });
 });
 
-test('._enqueue(hits)', function () {
+runner.test('._enqueue(hits) writes hits to cacheDir', function () {
   var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) });
-  fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2']);
   testStats._enqueue(['hit3']);
   testStats._enqueue(['hit4']);
@@ -66,9 +69,8 @@ test('._enqueue(hits)', function () {
   a.strictEqual(queue, 'hit1\nhit2\nhit3\nhit4\n');
 });
 
-test('._dequeue(count)', function () {
+runner.test('._dequeue(count) removes and returns hits', function () {
   var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) });
-  fs.writeFileSync(testStats._queuePath, '');
   testStats._enqueue(['hit1', 'hit2', 'hit3', 'hit4']);
 
   var queue = testStats._dequeue(2);
@@ -81,19 +83,31 @@ test('._dequeue(count)', function () {
   a.deepEqual(queue, []);
 });
 
-test('successful send, nothing queued', function () {
+runner.test('.send() screenview (live)', function () {
+  var testStats = new UsageStats('UA-70853320-3', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: getCacheDir(this.index)
+  });
+
+  testStats.screenView(this.name);
+  return testStats.send().then(function (responses) {
+    return responses.map(function (response) {
+      return response.res.statusCode;
+    });
+  });
+});
+
+runner.test('successful send with nothing queued - still nothing queued', function () {
   var plan = 0;
 
   var UsageTest = function (_UsageStats) {
     _inherits(UsageTest, _UsageStats);
 
-    function UsageTest(tid, options) {
+    function UsageTest() {
       _classCallCheck(this, UsageTest);
 
-      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
-
-      fs.writeFileSync(_this._queuePath, '');
-      return _this;
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).apply(this, arguments));
     }
 
     _createClass(UsageTest, [{
@@ -109,28 +123,63 @@ test('successful send, nothing queued', function () {
   var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
+    a.strictEqual(responses.length, 1);
+    a.strictEqual(responses[0].data, 'test');
     var queued = testStats._dequeue();
     a.ok(!queued.length);
   });
 });
 
-test('failed send, something queued', function () {
+runner.test('successful send with something queued - all hits sent and queue emptied', function () {
   var UsageTest = function (_UsageStats2) {
     _inherits(UsageTest, _UsageStats2);
 
-    function UsageTest(tid, options) {
+    function UsageTest() {
       _classCallCheck(this, UsageTest);
 
-      var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
-
-      fs.writeFileSync(_this2._queuePath, '');
-      return _this2;
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).apply(this, arguments));
     }
 
     _createClass(UsageTest, [{
       key: '_request',
       value: function _request(reqOptions, data) {
-        return Promise.reject('failed');
+        var lines = data.trim().split(os.EOL);
+        a.ok(/hit1/.test(lines[0]));
+        a.ok(/cd=test/.test(lines[1]));
+        return Promise.resolve({ res: { statusCode: 200 }, data: 'test' });
+      }
+    }]);
+
+    return UsageTest;
+  }(UsageStats);
+
+  var testStats = new UsageTest('UA-70853320-3', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: getCacheDir(this.index)
+  });
+  testStats._enqueue(['hit1']);
+  testStats.screenView('test');
+  return testStats.send().then(function (responses) {
+    var queued = testStats._dequeue();
+    a.strictEqual(queued.length, 0);
+  });
+});
+
+runner.test('failed send with nothing queued - hit is queued', function () {
+  var UsageTest = function (_UsageStats3) {
+    _inherits(UsageTest, _UsageStats3);
+
+    function UsageTest() {
+      _classCallCheck(this, UsageTest);
+
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).apply(this, arguments));
+    }
+
+    _createClass(UsageTest, [{
+      key: '_request',
+      value: function _request() {
+        return Promise.reject(new Error('failed'));
       }
     }]);
 
@@ -142,59 +191,40 @@ test('failed send, something queued', function () {
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
     a.strictEqual(queued.length, 1);
+    a.ok(/cd=test/.test(queued[0]));
   });
 });
 
-test('.send() screenview (live)', function () {
-  var testStats = new UsageStats('UA-70853320-3', {
-    name: 'usage-stats',
-    version: require('../../package').version,
-    dir: getCacheDir(this.index)
-  });
+runner.test('failed send with something queued - all hits queued', function () {
+  var UsageTest = function (_UsageStats4) {
+    _inherits(UsageTest, _UsageStats4);
 
-  testStats.screenView(this.name);
-  return testStats.send().then(function (responses) {
-    return responses.map(function (response) {
-      return response.data;
-    });
-  });
-});
-
-test.skip('successful send with something queued', function () {
-  var UsageTest = function (_UsageStats3) {
-    _inherits(UsageTest, _UsageStats3);
-
-    function UsageTest(tid, options) {
+    function UsageTest() {
       _classCallCheck(this, UsageTest);
 
-      var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).call(this, tid, options));
-
-      fs.writeFileSync(_this3._queuePath, 'test=something-queued\n');
-      return _this3;
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).apply(this, arguments));
     }
 
     _createClass(UsageTest, [{
       key: '_request',
       value: function _request(reqOptions, data) {
         var lines = data.trim().split(os.EOL);
-        a.ok(/something-queued/.test(lines[0]));
+        a.ok(/hit1/.test(lines[0]));
         a.ok(/cd=test/.test(lines[1]));
-        return Promise.resolve({ res: { statusCode: 200 }, data: 'test' });
+        return Promise.reject(new Error('failed'));
       }
     }]);
 
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageStats('UA-70853320-3', {
-    name: 'usage-stats',
-    version: require('../../package').version,
-    dir: getCacheDir(this.index)
-  });
-
+  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) });
+  testStats._enqueue(['hit1']);
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
-    a.strictEqual(queued.length, 0);
+    a.strictEqual(queued.length, 2);
+    a.ok(/hit1/.test(queued[0]));
+    a.ok(/cd=test/.test(queued[1]));
   });
 });

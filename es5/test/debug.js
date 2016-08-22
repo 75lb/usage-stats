@@ -1,11 +1,10 @@
 'use strict';
 
-var test = require('test-runner');
+var TestRunner = require('test-runner');
 var UsageStats = require('../lib/usage-stats');
 var a = require('core-assert');
 var fs = require('fs');
 var path = require('path');
-var os = require('os');
 var rimraf = require('rimraf');
 
 var tmpPath = path.resolve(__dirname, '../../tmp/test');
@@ -19,7 +18,9 @@ try {
   fs.mkdirSync(tmpPath);
 } catch (err) {}
 
-test('.send({ debug: true }) - screenview', function () {
+var runner = new TestRunner();
+
+runner.test('.send({ debug: true }) - screenview', function () {
   var testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
@@ -36,7 +37,7 @@ test('.send({ debug: true }) - screenview', function () {
   });
 });
 
-test('.send({ debug: true }) - screenview with a queue', function () {
+runner.test('.send({ debug: true }) - screenview with a queue', function () {
   var testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,

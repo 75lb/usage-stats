@@ -229,6 +229,7 @@ class UsageStats {
           })
           .catch(err => {
             this._enqueue(batch)
+            return err
           })
         requests.push(req)
       }
@@ -332,5 +333,3 @@ function createHitsPayload (array) {
 }
 
 module.exports = UsageStats
-
-/* running jsdoc2m --debug offline, with a queue returns nothing and deletes the queue */

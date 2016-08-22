@@ -136,10 +136,10 @@ var UsageStats = function () {
       var url = require('url');
       var requests = [];
       if (options.debug) {
+        this._enqueue(toSend);
         var reqOptions = url.parse(gaUrl.debug);
         reqOptions.method = 'POST';
         return this._request(reqOptions, createHitsPayload(toSend)).then(function (response) {
-          _this._enqueue(toSend);
           return {
             hits: toSend,
             result: JSON.parse(response.data.toString())
@@ -168,6 +168,7 @@ var UsageStats = function () {
             }
           }).catch(function (err) {
             _this._enqueue(batch);
+            return err;
           });
           requests.push(req);
         };

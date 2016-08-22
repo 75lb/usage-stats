@@ -1,10 +1,9 @@
 'use strict'
-const test = require('test-runner')
+const TestRunner = require('test-runner')
 const UsageStats = require('../lib/usage-stats')
 const a = require('core-assert')
 const fs = require('fs')
 const path = require('path')
-const os = require('os')
 const rimraf = require('rimraf')
 
 const tmpPath = path.resolve(__dirname, '../../tmp/test')
@@ -20,7 +19,9 @@ try {
   // exists
 }
 
-test('.send({ debug: true }) - screenview', function () {
+const runner = new TestRunner()
+
+runner.test('.send({ debug: true }) live - screenview', function () {
   const testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
@@ -38,7 +39,7 @@ test('.send({ debug: true }) - screenview', function () {
     })
 })
 
-test('.send({ debug: true }) - screenview with a queue', function () {
+runner.test('.send({ debug: true }) live - screenview with a queue', function () {
   const testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,

@@ -5,7 +5,7 @@
   "description": "A minimal, offline-friendly Google Analytics Measurement Protocol client for tracking usage statistics in node.js apps.",
   "repository": "https://github.com/75lb/usage-stats.git",
   "license": "MIT",
-  "main": "index",
+  "main": "main",
   "keywords": [
     "google",
     "analytics",
@@ -19,7 +19,7 @@
     "node": ">=0.10.0"
   },
   "scripts": {
-    "test": "test-runner es5/test/*.js",
+    "test": "node test.js",
     "docs": "jsdoc2md -t jsdoc2md/README.hbs src/lib/*.js > README.md; echo",
     "es5": "rm -rf es5 && babel --presets babel-preset-es2015 --no-comments src --out-dir es5",
     "cover": "istanbul cover ./node_modules/.bin/test-runner src/test/*.js && cat coverage/lcov.info | ./node_modules/.bin/coveralls && rm -rf coverage; echo"
@@ -38,7 +38,7 @@
     "coveralls": "^2.11.12",
     "jsdoc-to-markdown": "^2.0.0-alpha.5",
     "rimraf": "^2.5.4",
-    "test-runner": "~0.1.12"
+    "test-runner": "~0.2.0"
   },
   "standard": {
     "ignore": [
