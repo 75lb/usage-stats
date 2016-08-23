@@ -86,6 +86,8 @@ const UsageStats = require('usage-stats')
 | [options.lang] | <code>string</code> | Language. Defaults to `process.env.LANG`. |
 | [options.sr] | <code>string</code> | Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`. |
 | [options.dir] | <code>string</code> | Path of the directory used for persisting clientID and queue. |
+| [options.url] | <code>string</code> | Defaults to `'https://www.google-analytics.com/batch'`. |
+| [options.debugUrl] | <code>string</code> | Defaults to `'https://www.google-analytics.com/debug/collect'`. |
 
 **Example**  
 ```js
@@ -169,7 +171,7 @@ Send queued stats using as few requests as possible (typically a single request 
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Fulfil**: debug mode: `{ hits: {hits}, result: {validation result} }`  
-**Fulfil**: live mode: `{ res: {res}, data: {Buffer} }`  
+**Fulfil**: live mode: `[{ res: {res}, data: {Buffer} }]` - array of responses  
 
 | Param | Type | Description |
 | --- | --- | --- |

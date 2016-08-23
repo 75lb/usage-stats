@@ -7,7 +7,7 @@ var fs = require('fs');
 var path = require('path');
 var rimraf = require('rimraf');
 
-var tmpPath = path.resolve(__dirname, '../../tmp/test');
+var tmpPath = path.resolve(__dirname, '../../tmp/debug');
 function getCacheDir(index) {
   var dir = path.resolve(tmpPath, 'test' + index);
   rimraf.sync(dir);
@@ -20,7 +20,7 @@ try {
 
 var runner = new TestRunner();
 
-runner.test('.send({ debug: true }) - screenview', function () {
+runner.test('.send({ debug: true }) live - screenview', function () {
   var testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
@@ -37,7 +37,7 @@ runner.test('.send({ debug: true }) - screenview', function () {
   });
 });
 
-runner.test('.send({ debug: true }) - screenview with a queue', function () {
+runner.test('.send({ debug: true }) live - screenview with a queue', function () {
   var testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,

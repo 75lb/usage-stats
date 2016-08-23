@@ -8,7 +8,7 @@ const os = require('os')
 const rimraf = require('rimraf')
 const runner = new TestRunner()
 
-const tmpPath = path.resolve(__dirname, '../../tmp/test')
+const tmpPath = path.resolve(__dirname, '../../tmp/api')
 function getCacheDir (index) {
   const dir = path.resolve(tmpPath, 'test' + index)
   rimraf.sync(dir)
@@ -21,13 +21,13 @@ try {
   // exists
 }
 
-runner.test('trackingId required', function () {
+runner.test('new UsageStats(): trackingId required', function () {
   a.throws(function () {
     const testStats = new UsageStats()
   })
 })
 
-runner.test('.screenview(name) creates hit', function () {
+runner.test('.screenview(name): creates hit', function () {
   const testStats = new UsageStats('UA-00000000-0')
   testStats.screenView('test-screen')
   a.strictEqual(testStats._hits.length, 1)
@@ -35,7 +35,7 @@ runner.test('.screenview(name) creates hit', function () {
   a.ok(/&cd=test-screen/.test(testStats._hits[0]))
 })
 
-runner.test('.event(category, action) creates hit', function () {
+runner.test('.event(category, action): creates hit', function () {
   const testStats = new UsageStats('UA-00000000-0')
   testStats.event('test-category', 'test-action')
   a.strictEqual(testStats._hits.length, 1)
@@ -43,7 +43,7 @@ runner.test('.event(category, action) creates hit', function () {
   a.ok(/&ea=test-action/.test(testStats._hits[0]))
 })
 
-runner.test('.event() validation', function () {
+runner.test('.event(): validation', function () {
   const testStats = new UsageStats('UA-00000000-0')
   a.throws(function () {
     testStats.event('test-category')
@@ -53,7 +53,7 @@ runner.test('.event() validation', function () {
   })
 })
 
-runner.test('._enqueue(hits) writes hits to cacheDir', function () {
+runner.test('._enqueue(hits): writes hits to cacheDir', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) })
   testStats._enqueue([ 'hit1', 'hit2' ])
   testStats._enqueue([ 'hit3' ])
@@ -62,7 +62,7 @@ runner.test('._enqueue(hits) writes hits to cacheDir', function () {
   a.strictEqual(queue, 'hit1\nhit2\nhit3\nhit4\n')
 })
 
-runner.test('._dequeue(count) removes and returns hits', function () {
+runner.test('._dequeue(count): removes and returns hits', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) })
   testStats._enqueue([ 'hit1', 'hit2', 'hit3', 'hit4' ])
 
@@ -76,7 +76,7 @@ runner.test('._dequeue(count) removes and returns hits', function () {
   a.deepEqual(queue, [])
 })
 
-runner.test('.send() screenview (live)', function () {
+runner.test('.send(): screenview (live)', function () {
   const testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
@@ -90,7 +90,7 @@ runner.test('.send() screenview (live)', function () {
     })
 })
 
-runner.test('successful send with nothing queued - still nothing queued', function () {
+runner.test('.send(): successful with nothing queued - still nothing queued', function () {
   const plan = 0
 
   class UsageTest extends UsageStats {
@@ -110,7 +110,7 @@ runner.test('successful send with nothing queued - still nothing queued', functi
     })
 })
 
-runner.test('successful send with something queued - all hits sent and queue emptied', function () {
+runner.test('.send(): successful with something queued - all hits sent and queue emptied', function () {
   class UsageTest extends UsageStats {
     _request (reqOptions, data) {
       const lines = data.trim().split(os.EOL)
@@ -134,41 +134,37 @@ runner.test('successful send with something queued - all hits sent and queue emp
     })
 })
 
-runner.test('failed send with nothing queued - hit is queued', function () {
-  class UsageTest extends UsageStats {
-    _request () {
-      return Promise.reject(new Error('failed'))
-    }
-  }
+runner.test('.abort(): abort and queue hit', function () {
+  const http = require('http')
+  const server = http.createServer((req, res) => {
+    setTimeout(() => {
+      res.statusCode = 200
+      res.end('yeah?')
+    }, 2000)
+  })
+  server.listen(9000)
 
-  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) })
+  const testStats = new UsageStats('UA-00000000-0', {
+    dir: getCacheDir(this.index),
+    url: 'http://localhost:9000'
+  })
   testStats.screenView('test')
-  return testStats.send()
-    .then(responses => {
-      const queued = testStats._dequeue()
-      a.strictEqual(queued.length, 1)
-      a.ok(/cd=test/.test(queued[0]))
-    })
-})
 
-runner.test('failed send with something queued - all hits queued', function () {
-  class UsageTest extends UsageStats {
-    _request (reqOptions, data) {
-      const lines = data.trim().split(os.EOL)
-      a.ok(/hit1/.test(lines[0]))
-      a.ok(/cd=test/.test(lines[1]))
-      return Promise.reject(new Error('failed'))
-    }
-  }
+  return new Promise((resolve, reject) => {
+    testStats.send()
+      .then(responses => {
+        const response = responses[0]
+        a.strictEqual(response.err.name, 'aborted')
+        const queued = testStats._dequeue()
+        a.strictEqual(queued.length, 1)
+        server.close()
+        resolve()
+      })
+      .catch(err => {
+        server.close()
+        reject()
+      })
 
-  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) })
-  testStats._enqueue([ 'hit1' ])
-  testStats.screenView('test')
-  return testStats.send()
-    .then(responses => {
-      const queued = testStats._dequeue()
-      a.strictEqual(queued.length, 2)
-      a.ok(/hit1/.test(queued[0]))
-      a.ok(/cd=test/.test(queued[1]))
-    })
+    testStats.abort()
+  })
 })

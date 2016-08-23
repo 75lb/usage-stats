@@ -8,12 +8,6 @@ var path = require('path');
 var os = require('os');
 var fs = require('fs');
 
-var gaUrl = {
-  debug: 'https://www.google-analytics.com/debug/collect',
-  collect: 'https://www.google-analytics.com/collect',
-  batch: 'https://www.google-analytics.com/batch'
-};
-
 var UsageStats = function () {
   function UsageStats(trackingId, options) {
     _classCallCheck(this, UsageStats);
@@ -34,6 +28,12 @@ var UsageStats = function () {
     } else if (os.platform() === 'linux') {
       ua += '(X11; Linux ' + os.release() + ')';
     }
+
+    this._url = {
+      debug: options.debugUrl || 'https://www.google-analytics.com/debug/collect',
+      batch: options.url || 'https://www.google-analytics.com/batch'
+    };
+
     this._defaults = {
       v: 1,
       tid: trackingId,
@@ -44,9 +44,12 @@ var UsageStats = function () {
       sr: options.sr || this._getScreenResolution(),
       an: options.name || '',
       av: options.version || '',
-      aid: process.version,
-      aiid: os.type() + '; ' + os.release()
+      cd1: process.version,
+      cd2: os.type(),
+      cd3: os.release()
     };
+
+    this._requestController = {};
   }
 
   _createClass(UsageStats, [{
@@ -135,10 +138,16 @@ var UsageStats = function () {
 
       var url = require('url');
       var requests = [];
+
+      var reqOptions = url.parse(options.debug ? this._url.debug : this._url.batch);
+      reqOptions.method = 'POST';
+      reqOptions.headers = {
+        'content-type': 'text/plain'
+      };
+      reqOptions.controller = this._requestController;
+
       if (options.debug) {
         this._enqueue(toSend);
-        var reqOptions = url.parse(gaUrl.debug);
-        reqOptions.method = 'POST';
         return this._request(reqOptions, createHitsPayload(toSend)).then(function (response) {
           return {
             hits: toSend,
@@ -155,12 +164,9 @@ var UsageStats = function () {
           }
         });
       } else {
-        var _reqOptions = url.parse(gaUrl.batch);
-        _reqOptions.method = 'POST';
-
         var _loop = function _loop() {
           var batch = toSend.splice(0, 20);
-          var req = _this._request(_reqOptions, createHitsPayload(batch)).then(function (response) {
+          var req = _this._request(reqOptions, createHitsPayload(batch)).then(function (response) {
             if (response.res.statusCode >= 300) {
               throw new Error('Unexpected response');
             } else {
@@ -168,15 +174,31 @@ var UsageStats = function () {
             }
           }).catch(function (err) {
             _this._enqueue(batch);
-            return err;
+            return {
+              err: err
+            };
           });
           requests.push(req);
         };
 
-        while (toSend.length) {
+        while (toSend.length && !this._aborted) {
           _loop();
         }
-        return Promise.all(requests);
+        return Promise.all(requests).then(function (results) {
+          if (_this._aborted) {
+            _this._enqueue(toSend);
+            _this._aborted = false;
+          }
+          return results;
+        });
+      }
+    }
+  }, {
+    key: 'abort',
+    value: function abort() {
+      if (this._requestController) {
+        this._aborted = true;
+        this._requestController.abort();
       }
     }
   }, {
@@ -198,7 +220,6 @@ var UsageStats = function () {
     key: '_request',
     value: function _request(reqOptions, data) {
       var request = require('req-then');
-
       return request(reqOptions, data);
     }
   }, {
@@ -251,7 +272,7 @@ var UsageStats = function () {
 
 function postData(form) {
   return Object.keys(form).map(function (key) {
-    return key + '=' + encodeURI(form[key]);
+    return key + '=' + encodeURIComponent(form[key]);
   }).join('&');
 }
 

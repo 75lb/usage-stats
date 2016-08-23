@@ -6,7 +6,7 @@ const fs = require('fs')
 const path = require('path')
 const rimraf = require('rimraf')
 
-const tmpPath = path.resolve(__dirname, '../../tmp/test')
+const tmpPath = path.resolve(__dirname, '../../tmp/debug')
 function getCacheDir (index) {
   const dir = path.resolve(tmpPath, 'test' + index)
   rimraf.sync(dir)

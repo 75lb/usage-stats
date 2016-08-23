@@ -3,12 +3,6 @@ const path = require('path')
 const os = require('os')
 const fs = require('fs')
 
-const gaUrl = {
-  debug: 'https://www.google-analytics.com/debug/collect',
-  collect: 'https://www.google-analytics.com/collect',
-  batch: 'https://www.google-analytics.com/batch'
-}
-
 /**
  * @module usage-stats
  * @typicalname usageStats
@@ -28,6 +22,8 @@ class UsageStats {
    * @param [options.lang] {string} - Language. Defaults to `process.env.LANG`.
    * @param [options.sr] {string} - Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`.
    * @param [options.dir] {string} - Path of the directory used for persisting clientID and queue.
+   * @param [options.url] {string} - Defaults to `'https://www.google-analytics.com/batch'`.
+   * @param [options.debugUrl] {string} - Defaults to `'https://www.google-analytics.com/debug/collect'`.
    * @example
    * const usageStats = new UsageStats('UA-98765432-1', {
    *   name: 'sick app',
@@ -51,6 +47,12 @@ class UsageStats {
     } else if (os.platform() === 'linux') {
       ua += `(X11; Linux ${os.release()})`
     }
+
+    this._url = {
+      debug: options.debugUrl || 'https://www.google-analytics.com/debug/collect',
+      batch: options.url || 'https://www.google-analytics.com/batch'
+    }
+
     this._defaults = {
       v: 1,
       tid: trackingId,
@@ -61,9 +63,12 @@ class UsageStats {
       sr: options.sr || this._getScreenResolution(),
       an: options.name || '',
       av: options.version || '',
-      aid: process.version,
-      aiid: `${os.type()}; ${os.release()}`
+      cd1: process.version,
+      cd2: os.type(),
+      cd3: os.release()
     }
+
+    this._requestController = {}
   }
 
   get dir () {
@@ -182,7 +187,7 @@ class UsageStats {
    * @param [options.debug] {boolean} - [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result.
    * @returns {Promise}
    * @fulfil debug mode: `{ hits: {hits}, result: {validation result} }`
-   * @fulfil live mode: `{ res: {res}, data: {Buffer} }`
+   * @fulfil live mode: `[{ res: {res}, data: {Buffer} }]` - array of responses
    */
   send (options) {
     if (this._disabled) return this
@@ -193,10 +198,16 @@ class UsageStats {
 
     const url = require('url')
     const requests = []
+
+    const reqOptions = url.parse(options.debug ? this._url.debug : this._url.batch)
+    reqOptions.method = 'POST'
+    reqOptions.headers = {
+      'content-type': 'text/plain'
+    }
+    reqOptions.controller = this._requestController
+
     if (options.debug) {
       this._enqueue(toSend)
-      const reqOptions = url.parse(gaUrl.debug)
-      reqOptions.method = 'POST'
       return this._request(reqOptions, createHitsPayload(toSend))
         .then(response => {
           return {
@@ -215,9 +226,7 @@ class UsageStats {
           }
         })
     } else {
-      const reqOptions = url.parse(gaUrl.batch)
-      reqOptions.method = 'POST'
-      while (toSend.length) {
+      while (toSend.length && !this._aborted) {
         const batch = toSend.splice(0, 20)
         const req = this._request(reqOptions, createHitsPayload(batch))
           .then(response => {
@@ -228,12 +237,29 @@ class UsageStats {
             }
           })
           .catch(err => {
+            /* network fail, aborted or unexpected response */
             this._enqueue(batch)
-            return err
+            return {
+              err: err
+            }
           })
         requests.push(req)
       }
       return Promise.all(requests)
+        .then(results => {
+          if (this._aborted) {
+            this._enqueue(toSend)
+            this._aborted = false
+          }
+          return results
+        })
+    }
+  }
+
+  abort () {
+    if (this._requestController) {
+      this._aborted = true
+      this._requestController.abort()
     }
   }
 
@@ -266,8 +292,6 @@ class UsageStats {
    */
   _request (reqOptions, data) {
     const request = require('req-then')
-    // console.error(reqOptions)
-    // console.error(data)
     return request(reqOptions, data)
   }
 
@@ -321,7 +345,7 @@ class UsageStats {
 function postData (form) {
   return Object.keys(form)
     .map(key => {
-      return `${key}=${encodeURI(form[key])}`
+      return `${key}=${encodeURIComponent(form[key])}`
     })
     .join('&')
 }

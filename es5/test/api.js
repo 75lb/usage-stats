@@ -17,7 +17,7 @@ var os = require('os');
 var rimraf = require('rimraf');
 var runner = new TestRunner();
 
-var tmpPath = path.resolve(__dirname, '../../tmp/test');
+var tmpPath = path.resolve(__dirname, '../../tmp/api');
 function getCacheDir(index) {
   var dir = path.resolve(tmpPath, 'test' + index);
   rimraf.sync(dir);
@@ -28,13 +28,13 @@ try {
   fs.mkdirSync(tmpPath);
 } catch (err) {}
 
-runner.test('trackingId required', function () {
+runner.test('new UsageStats(): trackingId required', function () {
   a.throws(function () {
     var testStats = new UsageStats();
   });
 });
 
-runner.test('.screenview(name) creates hit', function () {
+runner.test('.screenview(name): creates hit', function () {
   var testStats = new UsageStats('UA-00000000-0');
   testStats.screenView('test-screen');
   a.strictEqual(testStats._hits.length, 1);
@@ -42,7 +42,7 @@ runner.test('.screenview(name) creates hit', function () {
   a.ok(/&cd=test-screen/.test(testStats._hits[0]));
 });
 
-runner.test('.event(category, action) creates hit', function () {
+runner.test('.event(category, action): creates hit', function () {
   var testStats = new UsageStats('UA-00000000-0');
   testStats.event('test-category', 'test-action');
   a.strictEqual(testStats._hits.length, 1);
@@ -50,7 +50,7 @@ runner.test('.event(category, action) creates hit', function () {
   a.ok(/&ea=test-action/.test(testStats._hits[0]));
 });
 
-runner.test('.event() validation', function () {
+runner.test('.event(): validation', function () {
   var testStats = new UsageStats('UA-00000000-0');
   a.throws(function () {
     testStats.event('test-category');
@@ -60,7 +60,7 @@ runner.test('.event() validation', function () {
   });
 });
 
-runner.test('._enqueue(hits) writes hits to cacheDir', function () {
+runner.test('._enqueue(hits): writes hits to cacheDir', function () {
   var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) });
   testStats._enqueue(['hit1', 'hit2']);
   testStats._enqueue(['hit3']);
@@ -69,7 +69,7 @@ runner.test('._enqueue(hits) writes hits to cacheDir', function () {
   a.strictEqual(queue, 'hit1\nhit2\nhit3\nhit4\n');
 });
 
-runner.test('._dequeue(count) removes and returns hits', function () {
+runner.test('._dequeue(count): removes and returns hits', function () {
   var testStats = new UsageStats('UA-00000000-0', { dir: getCacheDir(this.index) });
   testStats._enqueue(['hit1', 'hit2', 'hit3', 'hit4']);
 
@@ -83,7 +83,7 @@ runner.test('._dequeue(count) removes and returns hits', function () {
   a.deepEqual(queue, []);
 });
 
-runner.test('.send() screenview (live)', function () {
+runner.test('.send(): screenview (live)', function () {
   var testStats = new UsageStats('UA-70853320-3', {
     name: 'usage-stats',
     version: require('../../package').version,
@@ -98,7 +98,7 @@ runner.test('.send() screenview (live)', function () {
   });
 });
 
-runner.test('successful send with nothing queued - still nothing queued', function () {
+runner.test('.send(): successful with nothing queued - still nothing queued', function () {
   var plan = 0;
 
   var UsageTest = function (_UsageStats) {
@@ -130,7 +130,7 @@ runner.test('successful send with nothing queued - still nothing queued', functi
   });
 });
 
-runner.test('successful send with something queued - all hits sent and queue emptied', function () {
+runner.test('.send(): successful with something queued - all hits sent and queue emptied', function () {
   var UsageTest = function (_UsageStats2) {
     _inherits(UsageTest, _UsageStats2);
 
@@ -166,65 +166,35 @@ runner.test('successful send with something queued - all hits sent and queue emp
   });
 });
 
-runner.test('failed send with nothing queued - hit is queued', function () {
-  var UsageTest = function (_UsageStats3) {
-    _inherits(UsageTest, _UsageStats3);
-
-    function UsageTest() {
-      _classCallCheck(this, UsageTest);
-
-      return _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).apply(this, arguments));
-    }
-
-    _createClass(UsageTest, [{
-      key: '_request',
-      value: function _request() {
-        return Promise.reject(new Error('failed'));
-      }
-    }]);
-
-    return UsageTest;
-  }(UsageStats);
-
-  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) });
-  testStats.screenView('test');
-  return testStats.send().then(function (responses) {
-    var queued = testStats._dequeue();
-    a.strictEqual(queued.length, 1);
-    a.ok(/cd=test/.test(queued[0]));
+runner.test('.abort(): abort and queue hit', function () {
+  var http = require('http');
+  var server = http.createServer(function (req, res) {
+    setTimeout(function () {
+      res.statusCode = 200;
+      res.end('yeah?');
+    }, 2000);
   });
-});
+  server.listen(9000);
 
-runner.test('failed send with something queued - all hits queued', function () {
-  var UsageTest = function (_UsageStats4) {
-    _inherits(UsageTest, _UsageStats4);
-
-    function UsageTest() {
-      _classCallCheck(this, UsageTest);
-
-      return _possibleConstructorReturn(this, Object.getPrototypeOf(UsageTest).apply(this, arguments));
-    }
-
-    _createClass(UsageTest, [{
-      key: '_request',
-      value: function _request(reqOptions, data) {
-        var lines = data.trim().split(os.EOL);
-        a.ok(/hit1/.test(lines[0]));
-        a.ok(/cd=test/.test(lines[1]));
-        return Promise.reject(new Error('failed'));
-      }
-    }]);
-
-    return UsageTest;
-  }(UsageStats);
-
-  var testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) });
-  testStats._enqueue(['hit1']);
+  var testStats = new UsageStats('UA-00000000-0', {
+    dir: getCacheDir(this.index),
+    url: 'http://localhost:9000'
+  });
   testStats.screenView('test');
-  return testStats.send().then(function (responses) {
-    var queued = testStats._dequeue();
-    a.strictEqual(queued.length, 2);
-    a.ok(/hit1/.test(queued[0]));
-    a.ok(/cd=test/.test(queued[1]));
+
+  return new Promise(function (resolve, reject) {
+    testStats.send().then(function (responses) {
+      var response = responses[0];
+      a.strictEqual(response.err.name, 'aborted');
+      var queued = testStats._dequeue();
+      a.strictEqual(queued.length, 1);
+      server.close();
+      resolve();
+    }).catch(function (err) {
+      server.close();
+      reject();
+    });
+
+    testStats.abort();
   });
 });
