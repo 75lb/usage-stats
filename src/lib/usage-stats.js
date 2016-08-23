@@ -190,7 +190,7 @@ class UsageStats {
    * @fulfil live mode: `[{ res: {res}, data: {Buffer} }]` - array of responses
    */
   send (options) {
-    if (this._disabled) return this
+    if (this._disabled) return Promise.resolve([])
     options = options || {}
 
     const toSend = this._dequeue().concat(this._hits)
@@ -253,10 +253,12 @@ class UsageStats {
   }
 
   abort () {
+    if (this._disabled) return this
     if (this._requestController) {
       this._aborted = true
       this._requestController.abort()
     }
+    return this
   }
 
   /**

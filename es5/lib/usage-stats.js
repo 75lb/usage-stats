@@ -130,7 +130,7 @@ var UsageStats = function () {
     value: function send(options) {
       var _this = this;
 
-      if (this._disabled) return this;
+      if (this._disabled) return Promise.resolve([]);
       options = options || {};
 
       var toSend = this._dequeue().concat(this._hits);
@@ -192,10 +192,12 @@ var UsageStats = function () {
   }, {
     key: 'abort',
     value: function abort() {
+      if (this._disabled) return this;
       if (this._requestController) {
         this._aborted = true;
         this._requestController.abort();
       }
+      return this;
     }
   }, {
     key: '_getClientId',
