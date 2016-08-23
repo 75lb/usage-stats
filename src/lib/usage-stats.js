@@ -216,13 +216,9 @@ class UsageStats {
           }
         })
         .catch(err => {
-          if (err.code === 'ENOENT') {
-            return {
-              hits: toSend,
-              result: '<offline>'
-            }
-          } else {
-            throw err
+          return {
+            hits: toSend,
+            err: err
           }
         })
     } else {

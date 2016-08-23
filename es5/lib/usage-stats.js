@@ -154,14 +154,10 @@ var UsageStats = function () {
             result: JSON.parse(response.data.toString())
           };
         }).catch(function (err) {
-          if (err.code === 'ENOENT') {
-            return {
-              hits: toSend,
-              result: '<offline>'
-            };
-          } else {
-            throw err;
-          }
+          return {
+            hits: toSend,
+            err: err
+          };
         });
       } else {
         var _loop = function _loop() {
