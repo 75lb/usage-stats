@@ -34,19 +34,15 @@ class UsageStats {
     if (!trackingId) throw new Error('a Google Analytics TrackingID is required')
     options = options || {}
 
-    this.dir = options.dir || path.resolve(os.tmpdir(), 'usage-stats')
+    const homePath = require('home-path')
+    const cacheDir = path.resolve(homePath(), '.usage-stats')
+
+    this.dir = options.dir || cacheDir
 
     this._queuePath = path.resolve(this.dir, 'queue')
     this._disabled = false
     this._hits = []
-    let ua = 'Mozilla/5.0 '
-    if (os.platform() === 'win32') {
-      ua += `(Windows NT ${os.release()})`
-    } else if (os.platform() === 'darwin') {
-      ua += `(Macintosh; ${os.release()})`
-    } else if (os.platform() === 'linux') {
-      ua += `(X11; Linux ${os.release()})`
-    }
+    let ua = `Mozilla/5.0 ${this._getOSVersion()} Node/${process.version}`
 
     this._url = {
       debug: options.debugUrl || 'https://www.google-analytics.com/debug/collect',
@@ -293,6 +289,34 @@ class UsageStats {
       fs.writeFileSync(cidPath, cid)
     }
     return cid
+  }
+
+  /**
+   * @returns {string}
+   * @private
+   */
+  _getOSVersion () {
+    let output = null
+    const osVersionPath = path.resolve(this.dir, 'osversion')
+    try {
+      output = fs.readFileSync(osVersionPath, 'utf8')
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err
+      const execSync = require('child_process').execSync
+      if (!execSync) {
+        output = 'N/A'
+      } else {
+        if (os.platform() === 'win32') {
+          output = `(Windows NT ${os.release()})`
+        } else if (os.platform() === 'darwin') {
+          output = `(Macintosh; MAC OS X ${execSync('sw_vers -productVersion').toString().trim()}; Node ${process.version})`
+        } else if (os.platform() === 'linux') {
+          output = `(X11; Linux ${os.release()})`
+        }
+      }
+      fs.writeFileSync(osVersionPath, output)
+    }
+    return output
   }
 
   /**

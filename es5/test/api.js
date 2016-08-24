@@ -30,7 +30,7 @@ try {
 
 runner.test('new UsageStats(): trackingId required', function () {
   a.throws(function () {
-    var testStats = new UsageStats();
+    new UsageStats();
   });
 });
 
@@ -99,8 +99,6 @@ runner.test('.send(): screenview (live)', function () {
 });
 
 runner.test('.send(): successful with nothing queued - still nothing queued', function () {
-  var plan = 0;
-
   var UsageTest = function (_UsageStats) {
     _inherits(UsageTest, _UsageStats);
 

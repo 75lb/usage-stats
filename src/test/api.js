@@ -23,7 +23,7 @@ try {
 
 runner.test('new UsageStats(): trackingId required', function () {
   a.throws(function () {
-    const testStats = new UsageStats()
+    new UsageStats()
   })
 })
 
@@ -91,8 +91,6 @@ runner.test('.send(): screenview (live)', function () {
 })
 
 runner.test('.send(): successful with nothing queued - still nothing queued', function () {
-  const plan = 0
-
   class UsageTest extends UsageStats {
     _request (reqOptions, data) {
       return Promise.resolve({ res: { statusCode: 200 }, data: 'test' })
