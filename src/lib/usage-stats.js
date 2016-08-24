@@ -193,7 +193,7 @@ class UsageStats {
     if (this._disabled) return Promise.resolve([])
     options = options || {}
 
-    const toSend = this._dequeue().concat(this._hits)
+    let toSend = this._dequeue().concat(this._hits)
     this._hits.length = 0
 
     const url = require('url')
@@ -223,7 +223,7 @@ class UsageStats {
         })
     } else {
       while (toSend.length && !this._aborted) {
-        const batch = toSend.splice(0, 20)
+        let batch = toSend.splice(0, 20)
         const req = this._request(reqOptions, createHitsPayload(batch))
           .then(response => {
             if (response.res.statusCode >= 300) {
@@ -234,6 +234,14 @@ class UsageStats {
           })
           .catch(err => {
             /* network fail, aborted or unexpected response */
+            batch = batch.map(hit => {
+              /* aborted flag */
+              if (err.name === 'aborted') hit += '&cd4=true'
+              /* queued flag */
+              hit += '&cd5=true'
+              return hit
+            })
+
             this._enqueue(batch)
             return {
               err: err
@@ -244,6 +252,13 @@ class UsageStats {
       return Promise.all(requests)
         .then(results => {
           if (this._aborted) {
+            toSend = toSend.map(hit => {
+              /* aborted flag */
+              hit += '&cd4=true'
+              /* queued flag */
+              hit += '&cd5=true'
+              return hit
+            })
             this._enqueue(toSend)
             this._aborted = false
           }
@@ -254,7 +269,7 @@ class UsageStats {
 
   abort () {
     if (this._disabled) return this
-    if (this._requestController) {
+    if (this._requestController && this._requestController.abort) {
       this._aborted = true
       this._requestController.abort()
     }

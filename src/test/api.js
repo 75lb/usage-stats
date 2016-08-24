@@ -77,7 +77,7 @@ runner.test('._dequeue(count): removes and returns hits', function () {
 })
 
 runner.test('.send(): screenview (live)', function () {
-  const testStats = new UsageStats('UA-70853320-3', {
+  const testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
     dir: getCacheDir(this.index)
@@ -120,7 +120,7 @@ runner.test('.send(): successful with something queued - all hits sent and queue
     }
   }
 
-  const testStats = new UsageTest('UA-70853320-3', {
+  const testStats = new UsageTest('UA-00000000-0', {
     name: 'usage-stats',
     version: require('../../package').version,
     dir: getCacheDir(this.index)

@@ -169,6 +169,13 @@ var UsageStats = function () {
               return response;
             }
           }).catch(function (err) {
+            batch = batch.map(function (hit) {
+              if (err.name === 'aborted') hit += '&cd4=true';
+
+              hit += '&cd5=true';
+              return hit;
+            });
+
             _this._enqueue(batch);
             return {
               err: err
@@ -182,6 +189,12 @@ var UsageStats = function () {
         }
         return Promise.all(requests).then(function (results) {
           if (_this._aborted) {
+            toSend = toSend.map(function (hit) {
+              hit += '&cd4=true';
+
+              hit += '&cd5=true';
+              return hit;
+            });
             _this._enqueue(toSend);
             _this._aborted = false;
           }
@@ -193,7 +206,7 @@ var UsageStats = function () {
     key: 'abort',
     value: function abort() {
       if (this._disabled) return this;
-      if (this._requestController) {
+      if (this._requestController && this._requestController.abort) {
         this._aborted = true;
         this._requestController.abort();
       }
