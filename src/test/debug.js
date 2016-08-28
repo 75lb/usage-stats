@@ -2,59 +2,46 @@
 const TestRunner = require('test-runner')
 const UsageStats = require('../lib/usage-stats')
 const a = require('core-assert')
-const fs = require('fs')
-const path = require('path')
-const rimraf = require('rimraf')
-
-const tmpPath = path.resolve(__dirname, '../../tmp/debug')
-function getCacheDir (index) {
-  const dir = path.resolve(tmpPath, 'test' + index)
-  rimraf.sync(dir)
-  return dir
-}
-
-try {
-  fs.mkdirSync(tmpPath)
-} catch (err) {
-  // exists
-}
+const shared = require('./lib/shared')
 
 const runner = new TestRunner()
 
-runner.test('.send({ debug: true }) live - screenview', function () {
-  const testStats = new UsageStats('UA-70853320-3', {
+runner.test('.send({ debug: true }) live screenview: resolves with result, hit queued', function () {
+  const testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: getCacheDir(this.index)
+    dir: shared.getCacheDir(this.index, 'debug')
   })
 
   testStats.screenView(this.name)
   return testStats.send({ debug: true })
-    .then(response => {
+    .then(responses => {
+      const response = responses[0]
       a.strictEqual(response.hits.length, 1)
-      a.ok(/t=screenview/.test(response.hits[0]))
+      a.strictEqual(response.hits[0].get('t'), 'screenview')
       a.strictEqual(response.result.hitParsingResult[0].valid, true)
       const queued = testStats._dequeue()
-      a.strictEqual(queued.length, 1)
+      a.strictEqual(queued.length, 0)
     })
 })
 
-runner.test('.send({ debug: true }) live - screenview with a queue', function () {
-  const testStats = new UsageStats('UA-70853320-3', {
+runner.test('.send({ debug: true }) live screenview with something queued: resolves, queue correct', function () {
+  const testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: getCacheDir(this.index)
+    dir: shared.getCacheDir(this.index, 'debug')
   })
-  testStats._enqueue([ 'v=1' ])
+  const hit = testStats._createHit(new Map([[ 'one', 'test' ]]))
+  testStats._enqueue(hit)
   testStats.screenView(this.name)
   return testStats.send({ debug: true })
-    .then(response => {
-      // console.error(require('util').inspect(response, { depth: 3, colors: true }))
+    .then(responses => {
+      const response = responses[0]
       a.strictEqual(response.hits.length, 2)
-      a.ok(/t=screenview/.test(response.hits[1]))
+      a.strictEqual(response.hits[0].get('one'), 'test')
+      a.strictEqual(response.hits[1].get('t'), 'screenview')
       a.strictEqual(response.result.hitParsingResult[1].valid, true)
       const queued = testStats._dequeue()
-      // console.error(queued)
-      a.strictEqual(queued.length, 2)
+      a.strictEqual(queued.length, 0)
     })
 })

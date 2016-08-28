@@ -11,6 +11,21 @@ A minimal, offline-friendly [Google Analytics Measurement Protocol](https://deve
 
 ## Synopsis
 
+### Simple
+
+```js
+const UsageStats = require('usage-stats')
+const usageStats = new UsageStats('UA-98765432-1')
+
+// track a hit on the 'main' screen with 'simple' mode set.
+usageStats
+  .screenView('main')
+  .event('option', 'mode', 'simple')
+  .send()
+```
+
+### Typical
+
 ```js
 const UsageStats = require('usage-stats')
 const usageStats = new UsageStats('UA-98765432-1', {
@@ -44,11 +59,15 @@ Beside tracking events, exceptions and screenviews, the follow stats are collect
 
 * [App name](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#an)
 * [App version](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#av)
-* Node.js version (sent as [App ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#aid))
-* Operating System version (sent in [App Installer ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#aiid) and [User Agent](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ua))
+* Operating System version (sent in the UserAgent)
 * [Client ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#cid) (a random UUID, generated once per OS user and stored)
 * [Language](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ul) (`process.env.LANG`, if set)
 * [Screen resolution](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sr) (terminal rows by columns, by default)
+
+### Custom info optionally sent
+
+* Node.js version (sent as a Custom Dimension)
+
 
 ## API Reference
 

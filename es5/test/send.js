@@ -15,7 +15,22 @@ var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 
-runner.test('.send(): failed with nothing queued - hit is queued', function () {
+runner.test('.send(): screenview (live)', function () {
+  var testStats = new UsageStats('UA-70853320-4', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: shared.getCacheDir(this.index)
+  });
+
+  testStats.screenView(this.name);
+  return testStats.send().then(function (responses) {
+    return responses.map(function (response) {
+      return response.res.statusCode;
+    });
+  });
+});
+
+runner.test('.send(): successful with nothing queued - still nothing queued', function () {
   var UsageTest = function (_UsageStats) {
     _inherits(UsageTest, _UsageStats);
 
@@ -27,24 +42,25 @@ runner.test('.send(): failed with nothing queued - hit is queued', function () {
 
     _createClass(UsageTest, [{
       key: '_request',
-      value: function _request() {
-        return Promise.reject(new Error('failed'));
+      value: function _request(reqOptions, data) {
+        return Promise.resolve({ res: { statusCode: 200 }, data: 'test' });
       }
     }]);
 
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') });
+  var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
+    a.strictEqual(responses.length, 1);
+    a.strictEqual(responses[0].data, 'test');
     var queued = testStats._dequeue();
-    a.strictEqual(queued.length, 1);
-    a.strictEqual(queued[0].get('cd'), 'test');
+    a.strictEqual(queued.length, 0);
   });
 });
 
-runner.test('.send(): failed with something queued - all hits queued', function () {
+runner.test('.send(): successful with something queued - all hits sent and queue emptied', function () {
   var UsageTest = function (_UsageStats2) {
     _inherits(UsageTest, _UsageStats2);
 
@@ -56,22 +72,27 @@ runner.test('.send(): failed with something queued - all hits queued', function 
 
     _createClass(UsageTest, [{
       key: '_request',
-      value: function _request() {
-        return Promise.reject(new Error('failed'));
+      value: function _request(reqOptions, data) {
+        var lines = data.trim().split(os.EOL);
+        a.ok(/hit=1/.test(lines[0]));
+        a.ok(/cd=test/.test(lines[1]));
+        return Promise.resolve({ res: { statusCode: 200 }, data: 'test' });
       }
     }]);
 
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') });
-  var hit = testStats._createHit(new Map([['one', 'test']]));
+  var testStats = new UsageTest('UA-00000000-0', {
+    name: 'usage-stats',
+    version: require('../../package').version,
+    dir: shared.getCacheDir(this.index)
+  });
+  var hit = new Map([['hit', 1]]);
   testStats._enqueue(hit);
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     var queued = testStats._dequeue();
-    a.strictEqual(queued.length, 2);
-    a.strictEqual(queued[0].get('one'), 'test');
-    a.strictEqual(queued[1].get('cd'), 'test');
+    a.strictEqual(queued.length, 0);
   });
 });

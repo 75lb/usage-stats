@@ -1,12 +1,17 @@
 'use strict';
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var path = require('path');
 var os = require('os');
 var fs = require('fs');
+var arrayify = require('array-back');
 
 var UsageStats = function () {
   function UsageStats(trackingId, options) {
@@ -16,50 +21,41 @@ var UsageStats = function () {
     options = options || {};
 
     var homePath = require('home-path');
-    var cacheDir = path.resolve(homePath(), '.usage-stats');
 
-    this.dir = options.dir || cacheDir;
+    this.dir = options.dir || path.resolve(homePath(), '.usage-stats');
 
     this._queuePath = path.resolve(this.dir, 'queue');
     this._disabled = false;
     this._hits = [];
-    var ua = 'Mozilla/5.0 ' + this._getOSVersion() + ' Node/' + process.version;
 
     this._url = {
       debug: options.debugUrl || 'https://www.google-analytics.com/debug/collect',
       batch: options.url || 'https://www.google-analytics.com/batch'
     };
 
-    this._defaults = {
-      v: 1,
-      tid: trackingId,
-      ds: 'app',
-      cid: this._getClientId(),
-      ua: ua,
-      ul: options.lang || process.env.LANG,
-      sr: options.sr || this._getScreenResolution(),
-      an: options.name || '',
-      av: options.version || '',
-      cd1: process.version,
-      cd2: os.type(),
-      cd3: os.release()
-    };
+    this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', 'Mozilla/5.0 ' + this._getOSVersion() + ' Node/' + process.version], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
 
     this._requestController = {};
   }
 
   _createClass(UsageStats, [{
     key: 'start',
-    value: function start() {
+    value: function start(sessionParams) {
       if (this._disabled) return this;
       this._sessionStarted = true;
+      if (sessionParams) this._sessionParams = sessionParams;
       return this;
     }
   }, {
     key: 'end',
     value: function end() {
       if (this._disabled) return this;
-      this._hits[this._hits.length - 1] += '&sc=end';
+      if (this._hits.length === 1) {
+        this._hits[0].set('sc', 'end');
+      } else if (this._hits.length > 1) {
+        this._hits[this._hits.length - 1].set('sc', 'end');
+      }
+      if (this._sessionParams) delete this._sessionParams;
       return this;
     }
   }, {
@@ -75,38 +71,46 @@ var UsageStats = function () {
       return this;
     }
   }, {
+    key: '_createHit',
+    value: function _createHit(map) {
+      if (map && !(map instanceof Map)) throw new Error('map instance required');
+      return new Map([].concat(_toConsumableArray(this.defaults), _toConsumableArray(map)));
+    }
+  }, {
     key: 'event',
-    value: function event(category, action, label, value) {
+    value: function event(category, action, options) {
       if (this._disabled) return this;
+      options = options || {};
       if (!(category && action)) throw new Error('category and action required');
-      var t = require('typical');
-      var form = Object.assign({}, this._defaults, {
-        t: 'event',
-        ec: category,
-        ea: action
-      });
+
+      var hit = this._createHit(new Map([['t', 'event'], ['ec', category], ['ea', action]]));
+      if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
+      if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
       if (this._sessionStarted) {
-        form.sc = 'start';
+        hit.set('sc', 'start');
         this._sessionStarted = false;
       }
-      if (t.isDefined(label)) form.el = label;
-      if (t.isDefined(value)) form.ev = value;
-      this._hits.push(postData(form));
+
+      var t = require('typical');
+      if (t.isDefined(options.label)) hit.set('el', options.label);
+      if (t.isDefined(options.value)) hit.set('ev', options.value);
+      this._hits.push(hit);
       return this;
     }
   }, {
     key: 'screenView',
-    value: function screenView(name) {
+    value: function screenView(name, hitParams) {
       if (this._disabled) return this;
-      var form = Object.assign({}, this._defaults, {
-        t: 'screenview',
-        cd: name
-      });
+      if (hitParams && !(hitParams instanceof Map)) throw new Error('map instance required');
+
+      var hit = this._createHit(new Map([['t', 'screenview'], ['cd', name]]));
+      if (hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(hitParams)));
+      if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
       if (this._sessionStarted) {
-        form.sc = 'start';
+        hit.set('sc', 'start');
         this._sessionStarted = false;
       }
-      this._hits.push(postData(form));
+      this._hits.push(hit);
       return this;
     }
   }, {
@@ -133,8 +137,6 @@ var UsageStats = function () {
       this._hits.length = 0;
 
       var url = require('url');
-      var requests = [];
-
       var reqOptions = url.parse(options.debug ? this._url.debug : this._url.batch);
       reqOptions.method = 'POST';
       reqOptions.headers = {
@@ -142,38 +144,18 @@ var UsageStats = function () {
       };
       reqOptions.controller = this._requestController;
 
+      var requests = [];
       if (options.debug) {
-        this._enqueue(toSend);
-        return this._request(reqOptions, createHitsPayload(toSend)).then(function (response) {
-          return {
-            hits: toSend,
-            result: JSON.parse(response.data.toString())
-          };
-        }).catch(function (err) {
-          return {
-            hits: toSend,
-            err: err
-          };
-        });
-      } else {
         var _loop = function _loop() {
           var batch = toSend.splice(0, 20);
-          var req = _this._request(reqOptions, createHitsPayload(batch)).then(function (response) {
-            if (response.res.statusCode >= 300) {
-              throw new Error('Unexpected response');
-            } else {
-              return response;
-            }
-          }).catch(function (err) {
-            batch = batch.map(function (hit) {
-              if (err.name === 'aborted') hit += '&cd4=true';
-
-              hit += '&cd5=true';
-              return hit;
-            });
-
-            _this._enqueue(batch);
+          var req = _this._request(reqOptions, _this._createHitsPayload(batch)).then(validGAResponse).then(function (response) {
             return {
+              hits: batch,
+              result: JSON.parse(response.data.toString())
+            };
+          }).catch(function (err) {
+            return {
+              hits: batch,
               err: err
             };
           });
@@ -183,12 +165,32 @@ var UsageStats = function () {
         while (toSend.length && !this._aborted) {
           _loop();
         }
+        return Promise.all(requests);
+      } else {
+        var _loop2 = function _loop2() {
+          var batch = toSend.splice(0, 20);
+          var req = _this._request(reqOptions, _this._createHitsPayload(batch)).then(validGAResponse).catch(function (err) {
+            batch = batch.map(function (hit) {
+              if (err.name === 'aborted') hit.set('cd4', true);
+
+              hit.set('cd5', true);
+              return hit;
+            });
+            _this._enqueue(batch);
+            return {
+              err: err
+            };
+          });
+          requests.push(req);
+        };
+
+        while (toSend.length && !this._aborted) {
+          _loop2();
+        }
         return Promise.all(requests).then(function (results) {
           if (_this._aborted) {
             toSend = toSend.map(function (hit) {
-              hit += '&cd4=true';
-
-              hit += '&cd5=true';
+              hit.set('cd5', true);
               return hit;
             });
             _this._enqueue(toSend);
@@ -239,7 +241,7 @@ var UsageStats = function () {
           if (os.platform() === 'win32') {
             output = '(Windows NT ' + os.release() + ')';
           } else if (os.platform() === 'darwin') {
-            output = '(Macintosh; MAC OS X ' + execSync('sw_vers -productVersion').toString().trim() + '; Node ' + process.version + ')';
+            output = '(Macintosh; Intel MAC OS X ' + execSync('sw_vers -productVersion').toString().trim() + '; Node ' + process.version + ')';
           } else if (os.platform() === 'linux') {
             output = '(X11; Linux ' + os.release() + ')';
           }
@@ -259,11 +261,11 @@ var UsageStats = function () {
     value: function _dequeue(count) {
       try {
         var queue = fs.readFileSync(this._queuePath, 'utf8');
-        var hits = queue ? queue.trim().split(os.EOL) : [];
+        var hits = jsonToHits(queue);
         var output = [];
         if (count) {
           output = hits.splice(0, count);
-          fs.writeFileSync(this._queuePath, createHitsPayload(hits));
+          fs.writeFileSync(this._queuePath, hitsToJson(hits));
         } else {
           fs.writeFileSync(this._queuePath, '');
           output = hits;
@@ -280,12 +282,25 @@ var UsageStats = function () {
   }, {
     key: '_enqueue',
     value: function _enqueue(hits) {
-      fs.appendFileSync(this._queuePath, createHitsPayload(hits));
+      fs.appendFileSync(this._queuePath, hitsToJson(hits));
     }
   }, {
     key: '_getScreenResolution',
     value: function _getScreenResolution() {
-      return process.stdout.rows && process.stdout.columns ? process.stdout.rows + 'x' + process.stdout.columns : 'N/A';
+      return process.stdout.columns && process.stdout.rows ? process.stdout.columns + 'x' + process.stdout.rows : 'N/A';
+    }
+  }, {
+    key: '_createHitsPayload',
+    value: function _createHitsPayload(hits) {
+      return arrayify(hits).map(function (hit) {
+        return Array.from(hit).map(function (_ref) {
+          var _ref2 = _slicedToArray(_ref, 2);
+
+          var key = _ref2[0];
+          var value = _ref2[1];
+          return key + '=' + encodeURIComponent(value);
+        }).join('&');
+      }).join(os.EOL);
     }
   }, {
     key: 'dir',
@@ -302,16 +317,36 @@ var UsageStats = function () {
   return UsageStats;
 }();
 
-function postData(form) {
-  return Object.keys(form).map(function (key) {
-    return key + '=' + encodeURIComponent(form[key]);
-  }).join('&');
+function hitsToJson(hits) {
+  return arrayify(hits).map(function (hit) {
+    return mapToJson(hit) + os.EOL;
+  }).join('');
 }
 
-function createHitsPayload(array) {
-  var output = array.join(os.EOL);
-  if (output) output += os.EOL;
-  return output;
+function jsonToHits(json) {
+  if (json) {
+    var hits = json.trim().split(os.EOL);
+    return hits.map(function (hitJson) {
+      return jsonToMap(hitJson);
+    });
+  } else {
+    return [];
+  }
+}
+
+function validGAResponse(response) {
+  if (response.res.statusCode >= 300) {
+    throw new Error('Unexpected response');
+  } else {
+    return response;
+  }
+}
+
+function mapToJson(map) {
+  return JSON.stringify([].concat(_toConsumableArray(map)));
+}
+function jsonToMap(json) {
+  return new Map(JSON.parse(json));
 }
 
 module.exports = UsageStats;

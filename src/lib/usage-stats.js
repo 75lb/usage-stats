@@ -2,6 +2,7 @@
 const path = require('path')
 const os = require('os')
 const fs = require('fs')
+const arrayify = require('array-back')
 
 /**
  * @module usage-stats
@@ -35,34 +36,37 @@ class UsageStats {
     options = options || {}
 
     const homePath = require('home-path')
-    const cacheDir = path.resolve(homePath(), '.usage-stats')
 
-    this.dir = options.dir || cacheDir
+    /**
+     * Cache directory where the queue and client ID is kept. Defaults to `~/.usage-stats`.
+     * @type {string}
+     */
+    this.dir = options.dir || path.resolve(homePath(), '.usage-stats')
 
     this._queuePath = path.resolve(this.dir, 'queue')
     this._disabled = false
     this._hits = []
-    let ua = `Mozilla/5.0 ${this._getOSVersion()} Node/${process.version}`
 
     this._url = {
       debug: options.debugUrl || 'https://www.google-analytics.com/debug/collect',
       batch: options.url || 'https://www.google-analytics.com/batch'
     }
 
-    this._defaults = {
-      v: 1,
-      tid: trackingId,
-      ds: 'app',
-      cid: this._getClientId(),
-      ua: ua,
-      ul: options.lang || process.env.LANG,
-      sr: options.sr || this._getScreenResolution(),
-      an: options.name || '',
-      av: options.version || '',
-      cd1: process.version,
-      cd2: os.type(),
-      cd3: os.release()
-    }
+    /**
+     * Map of parameters passed with every hit.
+     * @type {Map}
+     */
+    this.defaults = new Map([
+      [ 'v', 1 ],
+      [ 'tid', trackingId ],
+      [ 'ds', 'app' ],
+      [ 'cid', this._getClientId() ],
+      [ 'ua', `Mozilla/5.0 ${this._getOSVersion()} Node/${process.version}` ],
+      [ 'ul', options.lang || process.env.LANG ],
+      [ 'sr', options.sr || this._getScreenResolution() ],
+      [ 'an', options.name || '' ],
+      [ 'av', options.version || '' ]
+    ])
 
     this._requestController = {}
   }
@@ -80,9 +84,10 @@ class UsageStats {
    * Starts the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
    * @chainable
    */
-  start () {
+  start (sessionParams) {
     if (this._disabled) return this
     this._sessionStarted = true
+    if (sessionParams) this._sessionParams = sessionParams
     return this
   }
 
@@ -92,7 +97,12 @@ class UsageStats {
    */
   end () {
     if (this._disabled) return this
-    this._hits[this._hits.length - 1] += '&sc=end'
+    if (this._hits.length === 1) {
+      this._hits[0].set('sc', 'end')
+    } else if (this._hits.length > 1) {
+      this._hits[this._hits.length - 1].set('sc', 'end')
+    }
+    if (this._sessionParams) delete this._sessionParams
     return this
   }
 
@@ -114,30 +124,41 @@ class UsageStats {
     return this
   }
 
+  _createHit (map) {
+    if (map && !(map instanceof Map)) throw new Error('map instance required')
+    return new Map([ ...this.defaults, ...map ])
+  }
+
   /**
    * Track an event. All event hits are queued until `.send()` is called.
    * @param {string} - Event category (required).
    * @param {string} - Event action (required).
-   * @param [label] {string} - Event label
-   * @param [value] {string} - Event value
+   * @param [options] {option}
+   * @param [options.label] {string} - Event label
+   * @param [options.value] {string} - Event value
    * @chainable
    */
-  event (category, action, label, value) {
+  event (category, action, options) {
     if (this._disabled) return this
+    options = options || {}
     if (!(category && action)) throw new Error('category and action required')
-    const t = require('typical')
-    const form = Object.assign({}, this._defaults, {
-      t: 'event',
-      ec: category,
-      ea: action
-    })
+
+    let hit = this._createHit(new Map([
+      [ 't', 'event' ],
+      [ 'ec', category ],
+      [ 'ea', action ]
+    ]))
+    if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
+    if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
     if (this._sessionStarted) {
-      form.sc = 'start'
+      hit.set('sc', 'start')
       this._sessionStarted = false
     }
-    if (t.isDefined(label)) form.el = label
-    if (t.isDefined(value)) form.ev = value
-    this._hits.push(postData(form))
+
+    const t = require('typical')
+    if (t.isDefined(options.label)) hit.set('el', options.label)
+    if (t.isDefined(options.value)) hit.set('ev', options.value)
+    this._hits.push(hit)
     return this
   }
 
@@ -146,17 +167,21 @@ class UsageStats {
    * @param {string} - Screen name
    * @chainable
    */
-  screenView (name) {
+  screenView (name, hitParams) {
     if (this._disabled) return this
-    const form = Object.assign({}, this._defaults, {
-      t: 'screenview',
-      cd: name
-    })
+    if (hitParams && !(hitParams instanceof Map)) throw new Error('map instance required')
+
+    let hit = this._createHit(new Map([
+      [ 't', 'screenview' ],
+      [ 'cd', name ],
+    ]))
+    if (hitParams) hit = new Map([ ...hit, ...hitParams ])
+    if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
     if (this._sessionStarted) {
-      form.sc = 'start'
+      hit.set('sc', 'start')
       this._sessionStarted = false
     }
-    this._hits.push(postData(form))
+    this._hits.push(hit)
     return this
   }
 
@@ -193,8 +218,6 @@ class UsageStats {
     this._hits.length = 0
 
     const url = require('url')
-    const requests = []
-
     const reqOptions = url.parse(options.debug ? this._url.debug : this._url.batch)
     reqOptions.method = 'POST'
     reqOptions.headers = {
@@ -202,42 +225,41 @@ class UsageStats {
     }
     reqOptions.controller = this._requestController
 
+    const requests = []
     if (options.debug) {
-      this._enqueue(toSend)
-      return this._request(reqOptions, createHitsPayload(toSend))
-        .then(response => {
-          return {
-            hits: toSend,
-            result: JSON.parse(response.data.toString())
-          }
-        })
-        .catch(err => {
-          return {
-            hits: toSend,
-            err: err
-          }
-        })
+      while (toSend.length && !this._aborted) {
+        let batch = toSend.splice(0, 20)
+        const req = this._request(reqOptions, this._createHitsPayload(batch))
+          .then(validGAResponse)
+          .then(response => {
+            return {
+              hits: batch,
+              result: JSON.parse(response.data.toString())
+            }
+          })
+          .catch(err => {
+            return {
+              hits: batch,
+              err: err
+            }
+          })
+        requests.push(req)
+      }
+      return Promise.all(requests)
     } else {
       while (toSend.length && !this._aborted) {
         let batch = toSend.splice(0, 20)
-        const req = this._request(reqOptions, createHitsPayload(batch))
-          .then(response => {
-            if (response.res.statusCode >= 300) {
-              throw new Error('Unexpected response')
-            } else {
-              return response
-            }
-          })
+        const req = this._request(reqOptions, this._createHitsPayload(batch))
+          .then(validGAResponse)
           .catch(err => {
             /* network fail, aborted or unexpected response */
             batch = batch.map(hit => {
               /* aborted flag */
-              if (err.name === 'aborted') hit += '&cd4=true'
+              if (err.name === 'aborted') hit.set('cd4', true)
               /* queued flag */
-              hit += '&cd5=true'
+              hit.set('cd5', true)
               return hit
             })
-
             this._enqueue(batch)
             return {
               err: err
@@ -249,10 +271,8 @@ class UsageStats {
         .then(results => {
           if (this._aborted) {
             toSend = toSend.map(hit => {
-              /* aborted flag */
-              hit += '&cd4=true'
               /* queued flag */
-              hit += '&cd5=true'
+              hit.set('cd5', true)
               return hit
             })
             this._enqueue(toSend)
@@ -309,7 +329,7 @@ class UsageStats {
         if (os.platform() === 'win32') {
           output = `(Windows NT ${os.release()})`
         } else if (os.platform() === 'darwin') {
-          output = `(Macintosh; MAC OS X ${execSync('sw_vers -productVersion').toString().trim()}; Node ${process.version})`
+          output = `(Macintosh; Intel MAC OS X ${execSync('sw_vers -productVersion').toString().trim()}; Node ${process.version})`
         } else if (os.platform() === 'linux') {
           output = `(X11; Linux ${os.release()})`
         }
@@ -342,11 +362,11 @@ class UsageStats {
   _dequeue (count) {
     try {
       const queue = fs.readFileSync(this._queuePath, 'utf8')
-      const hits = queue ? queue.trim().split(os.EOL) : []
+      const hits = jsonToHits(queue)
       let output = []
       if (count) {
         output = hits.splice(0, count)
-        fs.writeFileSync(this._queuePath, createHitsPayload(hits))
+        fs.writeFileSync(this._queuePath, hitsToJson(hits))
       } else {
         fs.writeFileSync(this._queuePath, '')
         output = hits
@@ -369,28 +389,57 @@ class UsageStats {
    * @sync
    */
   _enqueue (hits) {
-    fs.appendFileSync(this._queuePath, createHitsPayload(hits))
+    fs.appendFileSync(this._queuePath, hitsToJson(hits))
   }
 
   _getScreenResolution () {
-    return process.stdout.rows && process.stdout.columns
-      ? `${process.stdout.rows}x${process.stdout.columns}`
+    return process.stdout.columns && process.stdout.rows
+      ? `${process.stdout.columns}x${process.stdout.rows}`
       : 'N/A'
+  }
+
+  _createHitsPayload (hits) {
+    return arrayify(hits)
+      .map(hit => {
+        return Array.from(hit)
+          .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+          .join('&')
+      })
+      .join(os.EOL)
   }
 }
 
-function postData (form) {
-  return Object.keys(form)
-    .map(key => {
-      return `${key}=${encodeURIComponent(form[key])}`
+function hitsToJson (hits) {
+  return arrayify(hits)
+    .map(hit => {
+      return mapToJson(hit) + os.EOL
     })
-    .join('&')
+    .join('')
 }
 
-function createHitsPayload (array) {
-  let output = array.join(os.EOL)
-  if (output) output += os.EOL
-  return output
+function jsonToHits (json) {
+  if (json) {
+    const hits = json.trim().split(os.EOL)
+    return hits.map(hitJson => jsonToMap(hitJson))
+  } else {
+    return []
+  }
+}
+
+function validGAResponse (response) {
+  if (response.res.statusCode >= 300) {
+    throw new Error('Unexpected response')
+  } else {
+    return response
+  }
+}
+
+function mapToJson(map) {
+  return JSON.stringify([...map])
+}
+function jsonToMap(json) {
+  // console.error(require('util').inspect(json, { depth: 3, colors: true }))
+  return new Map(JSON.parse(json))
 }
 
 module.exports = UsageStats

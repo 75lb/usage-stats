@@ -2,24 +2,9 @@
 const TestRunner = require('test-runner')
 const UsageStats = require('../lib/usage-stats')
 const a = require('core-assert')
-const fs = require('fs')
-const path = require('path')
 const os = require('os')
-const rimraf = require('rimraf')
 const runner = new TestRunner()
-
-const tmpPath = path.resolve(__dirname, '../../tmp/offline')
-function getCacheDir (index) {
-  const dir = path.resolve(tmpPath, 'test' + index)
-  rimraf.sync(dir)
-  return dir
-}
-
-try {
-  fs.mkdirSync(tmpPath)
-} catch (err) {
-  // exists
-}
+const shared = require('./lib/shared')
 
 runner.test('.send(): failed with nothing queued - hit is queued', function () {
   class UsageTest extends UsageStats {
@@ -28,34 +13,32 @@ runner.test('.send(): failed with nothing queued - hit is queued', function () {
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) })
+  const testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') })
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
       const queued = testStats._dequeue()
       a.strictEqual(queued.length, 1)
-      a.ok(/cd=test/.test(queued[0]))
+      a.strictEqual(queued[0].get('cd'), 'test')
     })
 })
 
 runner.test('.send(): failed with something queued - all hits queued', function () {
   class UsageTest extends UsageStats {
-    _request (reqOptions, data) {
-      const lines = data.trim().split(os.EOL)
-      a.ok(/hit1/.test(lines[0]))
-      a.ok(/cd=test/.test(lines[1]))
+    _request () {
       return Promise.reject(new Error('failed'))
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0', { dir: getCacheDir(this.index) })
-  testStats._enqueue([ 'hit1' ])
+  const testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') })
+  const hit = testStats._createHit(new Map([[ 'one', 'test' ]]))
+  testStats._enqueue(hit)
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
       const queued = testStats._dequeue()
       a.strictEqual(queued.length, 2)
-      a.ok(/hit1/.test(queued[0]))
-      a.ok(/cd=test/.test(queued[1]))
+      a.strictEqual(queued[0].get('one'), 'test')
+      a.strictEqual(queued[1].get('cd'), 'test')
     })
 })
