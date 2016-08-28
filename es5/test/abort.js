@@ -1,7 +1,7 @@
 'use strict';
 
 var TestRunner = require('test-runner');
-var UsageStats = require('../lib/usage-stats');
+var UsageStats = require('../../');
 var a = require('core-assert');
 var os = require('os');
 var runner = new TestRunner();
@@ -39,3 +39,5 @@ runner.test('.abort(): abort and queue hit', function () {
     testStats.abort();
   });
 });
+
+runner.test('.abort(): called ad-hoc', function () {});

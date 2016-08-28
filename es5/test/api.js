@@ -1,7 +1,7 @@
 'use strict';
 
 var TestRunner = require('test-runner');
-var UsageStats = require('../lib/usage-stats');
+var UsageStats = require('../../');
 var a = require('core-assert');
 var fs = require('fs');
 var runner = new TestRunner();
@@ -46,7 +46,7 @@ runner.test('.screenview(name, params)', function () {
   var params = new Map();
   params.set('cm1', 1);
   params.set('cm2', 2);
-  testStats.screenView('test-screen', params);
+  testStats.screenView('test-screen', { hitParams: params });
   a.strictEqual(testStats._hits.length, 1);
   a.strictEqual(testStats._hits[0].get('t'), 'screenview');
   a.strictEqual(testStats._hits[0].get('cd'), 'test-screen');
@@ -167,3 +167,5 @@ runner.test('._createHitsPayload(hits): returns correct form data', function () 
   var result = testStats._createHitsPayload(hits);
   a.strictEqual(result, 'hit=1\nhit=2&ua=test\nhit=3&cd1=cd1&ua=ua');
 });
+
+runner.test('exception hitParams', function () {});

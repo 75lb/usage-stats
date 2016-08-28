@@ -1,6 +1,6 @@
 'use strict'
 const TestRunner = require('test-runner')
-const UsageStats = require('../lib/usage-stats')
+const UsageStats = require('../../')
 const a = require('core-assert')
 const shared = require('./lib/shared')
 

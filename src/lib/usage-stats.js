@@ -22,6 +22,7 @@ class UsageStats {
    * @param [options.version] {string} - App version
    * @param [options.lang] {string} - Language. Defaults to `process.env.LANG`.
    * @param [options.sr] {string} - Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`.
+   * @param [options.ua] {string} - User Agent string to use.
    * @param [options.dir] {string} - Path of the directory used for persisting clientID and queue.
    * @param [options.url] {string} - Defaults to `'https://www.google-analytics.com/batch'`.
    * @param [options.debugUrl] {string} - Defaults to `'https://www.google-analytics.com/debug/collect'`.
@@ -53,7 +54,7 @@ class UsageStats {
     }
 
     /**
-     * Map of parameters passed with every hit.
+     * Set parameters on this map to send them with every hit.
      * @type {Map}
      */
     this.defaults = new Map([
@@ -61,7 +62,7 @@ class UsageStats {
       [ 'tid', trackingId ],
       [ 'ds', 'app' ],
       [ 'cid', this._getClientId() ],
-      [ 'ua', `Mozilla/5.0 ${this._getOSVersion()} Node/${process.version}` ],
+      [ 'ua', options.ua || `Mozilla/5.0 ${this._getOSVersion()} Node/${process.version}` ],
       [ 'ul', options.lang || process.env.LANG ],
       [ 'sr', options.sr || this._getScreenResolution() ],
       [ 'an', options.name || '' ],
@@ -82,6 +83,7 @@ class UsageStats {
 
   /**
    * Starts the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
+   * @param [sessionParams] {Map[]} - An option map of paramaters to send with each hit in the sesison.
    * @chainable
    */
   start (sessionParams) {
@@ -136,6 +138,7 @@ class UsageStats {
    * @param [options] {option}
    * @param [options.label] {string} - Event label
    * @param [options.value] {string} - Event value
+   * @param [options.hitParams] {map[]} - One or more additional params to set on the hit.
    * @chainable
    */
   event (category, action, options) {
@@ -165,17 +168,20 @@ class UsageStats {
   /**
    * Track a screenview. All screenview hits are queued until `.send()` is called.
    * @param {string} - Screen name
+   * @param [options] {object}
+   * @param [options.hitParams] {map[]} - One or more additional params to set on the hit.
    * @chainable
    */
-  screenView (name, hitParams) {
+  screenView (name, options) {
     if (this._disabled) return this
-    if (hitParams && !(hitParams instanceof Map)) throw new Error('map instance required')
+    options = options || {}
+    if (options.hitParams && !(options.hitParams instanceof Map)) throw new Error('map instance required')
 
     let hit = this._createHit(new Map([
       [ 't', 'screenview' ],
       [ 'cd', name ],
     ]))
-    if (hitParams) hit = new Map([ ...hit, ...hitParams ])
+    if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
     if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
     if (this._sessionStarted) {
       hit.set('sc', 'start')
@@ -186,7 +192,7 @@ class UsageStats {
   }
 
   /**
-   * Track a exception. All screenview hits are queued until `.send()` is called.
+   * Track a exception. All exception hits are queued until `.send()` is called.
    * @param {string} - Error message
    * @param {boolean} - Set true if the exception was fatal
    * @chainable
@@ -207,8 +213,7 @@ class UsageStats {
    * @param [options] {object}
    * @param [options.debug] {boolean} - [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result.
    * @returns {Promise}
-   * @fulfil debug mode: `{ hits: {hits}, result: {validation result} }`
-   * @fulfil live mode: `[{ res: {res}, data: {Buffer} }]` - array of responses
+   * @fulfil `response[]` - array of responses
    */
   send (options) {
     if (this._disabled) return Promise.resolve([])
@@ -283,6 +288,10 @@ class UsageStats {
     }
   }
 
+  /**
+   * Aborts the in-progress .send() operation, queuing any unsent hits.
+   * @chainable
+   */
   abort () {
     if (this._disabled) return this
     if (this._requestController && this._requestController.abort) {

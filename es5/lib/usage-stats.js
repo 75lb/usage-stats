@@ -33,7 +33,7 @@ var UsageStats = function () {
       batch: options.url || 'https://www.google-analytics.com/batch'
     };
 
-    this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', 'Mozilla/5.0 ' + this._getOSVersion() + ' Node/' + process.version], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
+    this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion() + ' Node/' + process.version], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
 
     this._requestController = {};
   }
@@ -99,12 +99,13 @@ var UsageStats = function () {
     }
   }, {
     key: 'screenView',
-    value: function screenView(name, hitParams) {
+    value: function screenView(name, options) {
       if (this._disabled) return this;
-      if (hitParams && !(hitParams instanceof Map)) throw new Error('map instance required');
+      options = options || {};
+      if (options.hitParams && !(options.hitParams instanceof Map)) throw new Error('map instance required');
 
       var hit = this._createHit(new Map([['t', 'screenview'], ['cd', name]]));
-      if (hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(hitParams)));
+      if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
       if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
       if (this._sessionStarted) {
         hit.set('sc', 'start');

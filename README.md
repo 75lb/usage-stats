@@ -13,6 +13,8 @@ A minimal, offline-friendly [Google Analytics Measurement Protocol](https://deve
 
 ### Simple
 
+The most trivial example.
+
 ```js
 const UsageStats = require('usage-stats')
 const usageStats = new UsageStats('UA-98765432-1')
@@ -25,6 +27,8 @@ usageStats
 ```
 
 ### Typical
+
+More realistic usage. 
 
 ```js
 const UsageStats = require('usage-stats')
@@ -81,14 +85,15 @@ const UsageStats = require('usage-stats')
         * [new UsageStats(trackingId, [options])](#new_module_usage-stats--UsageStats_new)
         * [.dir](#module_usage-stats--UsageStats.UsageStats+dir) : <code>string</code>
         * [.defaults](#module_usage-stats--UsageStats.UsageStats+defaults) : <code>Map</code>
-        * [.start()](#module_usage-stats--UsageStats+start) ↩︎
+        * [.start([sessionParams])](#module_usage-stats--UsageStats+start) ↩︎
         * [.end()](#module_usage-stats--UsageStats+end) ↩︎
         * [.disable()](#module_usage-stats--UsageStats+disable) ↩︎
         * [.enable()](#module_usage-stats--UsageStats+enable) ↩︎
         * [.event(category, action, [options])](#module_usage-stats--UsageStats+event) ↩︎
-        * [.screenView(name)](#module_usage-stats--UsageStats+screenView) ↩︎
+        * [.screenView(name, [options])](#module_usage-stats--UsageStats+screenView) ↩︎
         * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ↩︎
         * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
+        * [.abort()](#module_usage-stats--UsageStats+abort) ↩︎
 
 <a name="exp_module_usage-stats--UsageStats"></a>
 
@@ -106,6 +111,7 @@ const UsageStats = require('usage-stats')
 | [options.version] | <code>string</code> | App version |
 | [options.lang] | <code>string</code> | Language. Defaults to `process.env.LANG`. |
 | [options.sr] | <code>string</code> | Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`. |
+| [options.ua] | <code>string</code> | User Agent string to use. |
 | [options.dir] | <code>string</code> | Path of the directory used for persisting clientID and queue. |
 | [options.url] | <code>string</code> | Defaults to `'https://www.google-analytics.com/batch'`. |
 | [options.debugUrl] | <code>string</code> | Defaults to `'https://www.google-analytics.com/debug/collect'`. |
@@ -126,16 +132,21 @@ Cache directory where the queue and client ID is kept. Defaults to `~/.usage-sta
 <a name="module_usage-stats--UsageStats.UsageStats+defaults"></a>
 
 #### usageStats.defaults : <code>Map</code>
-Map of parameters passed with every hit.
+Set parameters on this map to send them with every hit.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats+start"></a>
 
-#### usageStats.start() ↩︎
+#### usageStats.start([sessionParams]) ↩︎
 Starts the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Chainable**  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [sessionParams] | <code>Array.&lt;Map&gt;</code> | An option map of paramaters to send with each hit in the sesison. |
+
 <a name="module_usage-stats--UsageStats+end"></a>
 
 #### usageStats.end() ↩︎
@@ -172,10 +183,11 @@ Track an event. All event hits are queued until `.send()` is called.
 | [options] | <code>option</code> |  |
 | [options.label] | <code>string</code> | Event label |
 | [options.value] | <code>string</code> | Event value |
+| [options.hitParams] | <code>Array.&lt;map&gt;</code> | One or more additional params to set on the hit. |
 
 <a name="module_usage-stats--UsageStats+screenView"></a>
 
-#### usageStats.screenView(name) ↩︎
+#### usageStats.screenView(name, [options]) ↩︎
 Track a screenview. All screenview hits are queued until `.send()` is called.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
@@ -184,11 +196,13 @@ Track a screenview. All screenview hits are queued until `.send()` is called.
 | Param | Type | Description |
 | --- | --- | --- |
 | name | <code>string</code> | Screen name |
+| [options] | <code>object</code> |  |
+| [options.hitParams] | <code>Array.&lt;map&gt;</code> | One or more additional params to set on the hit. |
 
 <a name="module_usage-stats--UsageStats+exception"></a>
 
 #### usageStats.exception(description, isFatal) ↩︎
-Track a exception. All screenview hits are queued until `.send()` is called.
+Track a exception. All exception hits are queued until `.send()` is called.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Chainable**  
@@ -204,14 +218,20 @@ Track a exception. All screenview hits are queued until `.send()` is called.
 Send queued stats using as few requests as possible (typically a single request - a max of 20 events/screenviews may be sent per request). If offline, the stats will be stored and re-tried on next invocation.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
-**Fulfil**: debug mode: `{ hits: {hits}, result: {validation result} }`  
-**Fulfil**: live mode: `[{ res: {res}, data: {Buffer} }]` - array of responses  
+**Fulfil**: `response[]` - array of responses  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | [options] | <code>object</code> |  |
 | [options.debug] | <code>boolean</code> | [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result. |
 
+<a name="module_usage-stats--UsageStats+abort"></a>
+
+#### usageStats.abort() ↩︎
+Aborts the in-progress .send() operation, queuing any unsent hits.
+
+**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Chainable**  
 
 * * *
 
