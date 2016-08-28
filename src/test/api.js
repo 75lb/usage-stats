@@ -131,7 +131,6 @@ runner.test('.event(options, hitParams): creates hit and applies hit params', fu
   a.strictEqual(testStats._hits[0].get('cd2'), 'cd2')
 })
 
-
 runner.test('._enqueue(hits): writes hits to cacheDir', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
   const hit1 = new Map([[ 'hit', 1 ]])
@@ -141,6 +140,18 @@ runner.test('._enqueue(hits): writes hits to cacheDir', function () {
   testStats._enqueue(hit3)
   const queue = fs.readFileSync(testStats._queuePath, 'utf8')
   a.strictEqual(queue, '[["hit",1]]\n[["hit",2]]\n[["hit",3]]\n')
+})
+
+runner.test('._enqueue(): remove session control from queued hits', function () {
+  const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  const hit1 = new Map([[ 'hit', 1 ], [ 'sc', 'start' ]])
+  testStats._enqueue(hit1)
+  let queue = fs.readFileSync(testStats._queuePath, 'utf8')
+  a.strictEqual(queue, '[["hit",1]]\n')
+  const hit2 = new Map([[ 'hit', 2 ], [ 'cd1', 'test' ]])
+  testStats._enqueue(hit2)
+  queue = fs.readFileSync(testStats._queuePath, 'utf8')
+  a.strictEqual(queue, '[["hit",1]]\n[["hit",2],["cd1","test"]]\n')
 })
 
 runner.test('._dequeue(count): removes and returns hits', function () {
@@ -172,5 +183,30 @@ runner.test('._createHitsPayload(hits): returns correct form data', function () 
 })
 
 runner.test('exception hitParams', function () {
+
+})
+
+runner.test('.defaults: extra params', function () {
+
+})
+
+runner.test('methods taking maps as input also accept objects or map constructor data', function () {
+
+})
+
+runner.test('_getOSVersion(): only cache for 24 hours', function () {
+
+})
+
+runner.test('.enable()', function () {
+
+})
+runner.test('.disable()', function () {
+
+})
+runner.test('.exception()', function () {
+
+})
+runner.test('.event(): as the first hit of a session - marked sc=start', function () {
 
 })

@@ -283,7 +283,15 @@ var UsageStats = function () {
   }, {
     key: '_enqueue',
     value: function _enqueue(hits) {
-      fs.appendFileSync(this._queuePath, hitsToJson(hits));
+      hits = arrayify(hits);
+      if (hits.length) {
+        hits = hits.map(function (hit) {
+          if (hit.has('sc')) hit.delete('sc');
+          return hit;
+        });
+        fs.appendFileSync(this._queuePath, hitsToJson(hits));
+      }
+      return this;
     }
   }, {
     key: '_getScreenResolution',

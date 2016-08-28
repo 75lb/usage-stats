@@ -42,5 +42,6 @@ runner.test('.abort(): abort and queue hit', function () {
 })
 
 runner.test('.abort(): called ad-hoc', function () {
-
+  // what are the effects of calling .abort() before .send()
+  // what are the effects of calling .abort() after .send() on the same tick
 })

@@ -396,9 +396,18 @@ class UsageStats {
    * @param {string[]} - Array of hits.
    * @private
    * @sync
+   * @chainable
    */
   _enqueue (hits) {
-    fs.appendFileSync(this._queuePath, hitsToJson(hits))
+    hits = arrayify(hits)
+    if (hits.length) {
+      hits = hits.map(hit => {
+        if (hit.has('sc')) hit.delete('sc')
+        return hit
+      })
+      fs.appendFileSync(this._queuePath, hitsToJson(hits))
+    }
+    return this;
   }
 
   _getScreenResolution () {
@@ -447,7 +456,6 @@ function mapToJson(map) {
   return JSON.stringify([...map])
 }
 function jsonToMap(json) {
-  // console.error(require('util').inspect(json, { depth: 3, colors: true }))
   return new Map(JSON.parse(json))
 }
 
