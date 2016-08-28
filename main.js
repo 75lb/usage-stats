@@ -5,7 +5,7 @@ if (!detect.collections()) {
   require('core-js/es6/map')
 }
 
-if (detect.all('class', 'arrowFunction', 'let', 'const', 'spread')) {
+if (detect.all('class', 'arrowFunction', 'let', 'const', 'spread', 'destructuring')) {
   module.exports = require('./src/lib/usage-stats')
 } else {
   require('core-js/es6/object')
