@@ -138,7 +138,7 @@ class UsageStats {
    * @param [options] {option}
    * @param [options.label] {string} - Event label
    * @param [options.value] {string} - Event value
-   * @param [options.hitParams] {map[]} - One or more additional params to set on the hit.
+   * @param [options.hitParams] {map[]} - One or more additional params to send with the hit.
    * @chainable
    */
   event (category, action, options) {
@@ -371,7 +371,12 @@ class UsageStats {
   _dequeue (count) {
     try {
       const queue = fs.readFileSync(this._queuePath, 'utf8')
-      const hits = jsonToHits(queue)
+      let hits
+      try {
+        hits = jsonToHits(queue)
+      } catch (err) {
+        hits = []
+      }
       let output = []
       if (count) {
         output = hits.splice(0, count)

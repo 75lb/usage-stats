@@ -183,7 +183,7 @@ Track an event. All event hits are queued until `.send()` is called.
 | [options] | <code>option</code> |  |
 | [options.label] | <code>string</code> | Event label |
 | [options.value] | <code>string</code> | Event value |
-| [options.hitParams] | <code>Array.&lt;map&gt;</code> | One or more additional params to set on the hit. |
+| [options.hitParams] | <code>Array.&lt;map&gt;</code> | One or more additional params to send with the hit. |
 
 <a name="module_usage-stats--UsageStats+screenView"></a>
 

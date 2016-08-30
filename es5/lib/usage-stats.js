@@ -262,7 +262,12 @@ var UsageStats = function () {
     value: function _dequeue(count) {
       try {
         var queue = fs.readFileSync(this._queuePath, 'utf8');
-        var hits = jsonToHits(queue);
+        var hits = void 0;
+        try {
+          hits = jsonToHits(queue);
+        } catch (err) {
+          hits = [];
+        }
         var output = [];
         if (count) {
           output = hits.splice(0, count);

@@ -170,6 +170,17 @@ runner.test('._dequeue(count): removes and returns hits', function () {
   a.deepEqual(queue, []);
 });
 
+runner.test('._dequeue(): handles garbage on the queue', function () {
+  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
+  fs.writeFileSync(testStats._queuePath, 'blah');
+
+  var queue = void 0;
+  a.doesNotThrow(function () {
+    return queue = testStats._dequeue();
+  });
+  a.deepEqual(queue, []);
+});
+
 runner.test('._createHitsPayload(hits): returns correct form data', function () {
   var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
   var hit1 = new Map([['hit', 1]]);

@@ -172,6 +172,16 @@ runner.test('._dequeue(count): removes and returns hits', function () {
   a.deepEqual(queue, [])
 })
 
+runner.test('._dequeue(): handles garbage on the queue', function () {
+  const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  fs.writeFileSync(testStats._queuePath, 'blah')
+
+  let queue
+  a.doesNotThrow(() => queue = testStats._dequeue())
+  a.deepEqual(queue, [])
+})
+
+
 runner.test('._createHitsPayload(hits): returns correct form data', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
   const hit1 = new Map([ [ 'hit', 1 ] ])
