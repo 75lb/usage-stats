@@ -94,6 +94,7 @@ const UsageStats = require('usage-stats')
         * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ↩︎
         * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
         * [.abort()](#module_usage-stats--UsageStats+abort) ↩︎
+        * [.save()](#module_usage-stats--UsageStats+save) ↩︎
 
 <a name="exp_module_usage-stats--UsageStats"></a>
 
@@ -211,6 +212,7 @@ Track a exception. All exception hits are queued until `.send()` is called.
 | --- | --- | --- |
 | description | <code>string</code> | Error message |
 | isFatal | <code>boolean</code> | Set true if the exception was fatal |
+| [options.hitParams] | <code>Array.&lt;map&gt;</code> | One or more additional params to set on the hit. |
 
 <a name="module_usage-stats--UsageStats+send"></a>
 
@@ -229,6 +231,13 @@ Send queued stats using as few requests as possible (typically a single request 
 
 #### usageStats.abort() ↩︎
 Aborts the in-progress .send() operation, queuing any unsent hits.
+
+**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Chainable**  
+<a name="module_usage-stats--UsageStats+save"></a>
+
+#### usageStats.save() ↩︎
+Dumps unsent hits to the queue. They will dequeued and sent on next invocation of `.send()`.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Chainable**  

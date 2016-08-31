@@ -142,7 +142,8 @@ runner.test('._enqueue(hits): writes hits to cacheDir', function () {
   a.strictEqual(queue, '[["hit",1]]\n[["hit",2]]\n[["hit",3]]\n')
 })
 
-runner.test('._enqueue(): remove session control from queued hits', function () {
+/* REMOVE SESSION CONTROL ON ABORT, BUT NOT ON REGULAR BEHAVIOUR.. MAYBE. */
+runner.skip('._enqueue(): remove session control from queued hits', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
   const hit1 = new Map([[ 'hit', 1 ], [ 'sc', 'start' ]])
   testStats._enqueue(hit1)
@@ -192,6 +193,15 @@ runner.test('._createHitsPayload(hits): returns correct form data', function () 
   a.strictEqual(result, 'hit=1\nhit=2&ua=test\nhit=3&cd1=cd1&ua=ua')
 })
 
+runner.test('.exception(msg, isFatal)', function () {
+  const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  testStats.exception('test', 1)
+  a.strictEqual(testStats._hits.length, 1)
+  a.strictEqual(testStats._hits[0].get('t'), 'exception')
+  a.strictEqual(testStats._hits[0].get('exd'), 'test')
+  a.strictEqual(testStats._hits[0].get('exf'), 1)
+})
+
 runner.test('exception hitParams', function () {
 
 })
@@ -214,9 +224,8 @@ runner.test('.enable()', function () {
 runner.test('.disable()', function () {
 
 })
-runner.test('.exception()', function () {
 
-})
+
 runner.test('.event(): as the first hit of a session - marked sc=start', function () {
 
 })

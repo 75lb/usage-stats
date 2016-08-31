@@ -33,7 +33,7 @@ var UsageStats = function () {
       batch: options.url || 'https://www.google-analytics.com/batch'
     };
 
-    this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion() + ' Node/' + process.version], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
+    this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion()], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
 
     this._requestController = {};
   }
@@ -116,14 +116,17 @@ var UsageStats = function () {
     }
   }, {
     key: 'exception',
-    value: function exception(description, isFatal) {
+    value: function exception(description, isFatal, options) {
       if (this._disabled) return this;
-      var form = Object.assign({}, this._defaults, {
-        t: 'exception',
-        exd: description,
-        exf: isFatal ? 1 : 0
-      });
-      this._hits.push(postData(form));
+      options = options || {};
+      var hit = this._createHit(new Map([['t', 'exception'], ['exd', description], ['exf', isFatal ? 1 : 0]]));
+      if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
+      if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
+      if (this._sessionStarted) {
+        hit.set('sc', 'start');
+        this._sessionStarted = false;
+      }
+      this._hits.push(hit);
       return this;
     }
   }, {
@@ -212,6 +215,13 @@ var UsageStats = function () {
       return this;
     }
   }, {
+    key: 'save',
+    value: function save() {
+      this._enqueue(this._hits);
+      this._hits.length = 0;
+      return this;
+    }
+  }, {
     key: '_getClientId',
     value: function _getClientId() {
       var cid = null;
@@ -242,7 +252,7 @@ var UsageStats = function () {
           if (os.platform() === 'win32') {
             output = '(Windows NT ' + os.release() + ')';
           } else if (os.platform() === 'darwin') {
-            output = '(Macintosh; Intel MAC OS X ' + execSync('sw_vers -productVersion').toString().trim() + '; Node ' + process.version + ')';
+            output = '(Macintosh; Intel MAC OS X ' + execSync('sw_vers -productVersion').toString().trim() + ')';
           } else if (os.platform() === 'linux') {
             output = '(X11; Linux ' + os.release() + ')';
           }
@@ -290,10 +300,6 @@ var UsageStats = function () {
     value: function _enqueue(hits) {
       hits = arrayify(hits);
       if (hits.length) {
-        hits = hits.map(function (hit) {
-          if (hit.has('sc')) hit.delete('sc');
-          return hit;
-        });
         fs.appendFileSync(this._queuePath, hitsToJson(hits));
       }
       return this;

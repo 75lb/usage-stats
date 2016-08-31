@@ -62,7 +62,7 @@ class UsageStats {
       [ 'tid', trackingId ],
       [ 'ds', 'app' ],
       [ 'cid', this._getClientId() ],
-      [ 'ua', options.ua || `Mozilla/5.0 ${this._getOSVersion()} Node/${process.version}` ],
+      [ 'ua', options.ua || `Mozilla/5.0 ${this._getOSVersion()}` ],
       [ 'ul', options.lang || process.env.LANG ],
       [ 'sr', options.sr || this._getScreenResolution() ],
       [ 'an', options.name || '' ],
@@ -195,16 +195,24 @@ class UsageStats {
    * Track a exception. All exception hits are queued until `.send()` is called.
    * @param {string} - Error message
    * @param {boolean} - Set true if the exception was fatal
+   * @param [options.hitParams] {map[]} - One or more additional params to set on the hit.
    * @chainable
    */
-  exception (description, isFatal) {
+  exception (description, isFatal, options) {
     if (this._disabled) return this
-    const form = Object.assign({}, this._defaults, {
-      t: 'exception',
-      exd: description,
-      exf: isFatal ? 1 : 0
-    })
-    this._hits.push(postData(form))
+    options = options || {}
+    let hit = this._createHit(new Map([
+      [ 't', 'exception' ],
+      [ 'exd', description ],
+      [ 'exf', isFatal ? 1 : 0 ]
+    ]))
+    if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
+    if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
+    if (this._sessionStarted) {
+      hit.set('sc', 'start')
+      this._sessionStarted = false
+    }
+    this._hits.push(hit)
     return this
   }
 
@@ -302,6 +310,16 @@ class UsageStats {
   }
 
   /**
+   * Dumps unsent hits to the queue. They will dequeued and sent on next invocation of `.send()`.
+   * @chainable
+   */
+  save () {
+    this._enqueue(this._hits)
+    this._hits.length = 0
+    return this
+  }
+
+  /**
    * Must return a v4 UUID.
    * @returns {string}
    * @private
@@ -338,7 +356,7 @@ class UsageStats {
         if (os.platform() === 'win32') {
           output = `(Windows NT ${os.release()})`
         } else if (os.platform() === 'darwin') {
-          output = `(Macintosh; Intel MAC OS X ${execSync('sw_vers -productVersion').toString().trim()}; Node ${process.version})`
+          output = `(Macintosh; Intel MAC OS X ${execSync('sw_vers -productVersion').toString().trim()})`
         } else if (os.platform() === 'linux') {
           output = `(X11; Linux ${os.release()})`
         }
@@ -406,10 +424,6 @@ class UsageStats {
   _enqueue (hits) {
     hits = arrayify(hits)
     if (hits.length) {
-      hits = hits.map(hit => {
-        if (hit.has('sc')) hit.delete('sc')
-        return hit
-      })
       fs.appendFileSync(this._queuePath, hitsToJson(hits))
     }
     return this;
