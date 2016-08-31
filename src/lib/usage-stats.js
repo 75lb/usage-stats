@@ -320,6 +320,23 @@ class UsageStats {
   }
 
   /**
+   * Return the total hits stored on the queue.
+   * @returns {number}
+   */
+  hitsQueued () {
+    let hits = []
+    try {
+      const queue = fs.readFileSync(this._queuePath, 'utf8')
+      hits = queue.trim().split(os.EOL)
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        throw err
+      }
+    }
+    return hits.length
+  }
+
+  /**
    * Must return a v4 UUID.
    * @returns {string}
    * @private

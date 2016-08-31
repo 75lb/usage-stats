@@ -222,6 +222,20 @@ var UsageStats = function () {
       return this;
     }
   }, {
+    key: 'hitsQueued',
+    value: function hitsQueued() {
+      var hits = [];
+      try {
+        var queue = fs.readFileSync(this._queuePath, 'utf8');
+        hits = queue.trim().split(os.EOL);
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          throw err;
+        }
+      }
+      return hits.length;
+    }
+  }, {
     key: '_getClientId',
     value: function _getClientId() {
       var cid = null;
