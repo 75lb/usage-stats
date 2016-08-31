@@ -72,9 +72,17 @@ var UsageStats = function () {
     }
   }, {
     key: '_createHit',
-    value: function _createHit(map) {
+    value: function _createHit(map, options) {
       if (map && !(map instanceof Map)) throw new Error('map instance required');
-      return new Map([].concat(_toConsumableArray(this.defaults), _toConsumableArray(map)));
+      options = options || {};
+      var hit = new Map([].concat(_toConsumableArray(this.defaults), _toConsumableArray(map)));
+      if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
+      if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
+      if (this._sessionStarted) {
+        hit.set('sc', 'start');
+        this._sessionStarted = false;
+      }
+      return hit;
     }
   }, {
     key: 'event',
@@ -83,13 +91,7 @@ var UsageStats = function () {
       options = options || {};
       if (!(category && action)) throw new Error('category and action required');
 
-      var hit = this._createHit(new Map([['t', 'event'], ['ec', category], ['ea', action]]));
-      if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
-      if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
-      if (this._sessionStarted) {
-        hit.set('sc', 'start');
-        this._sessionStarted = false;
-      }
+      var hit = this._createHit(new Map([['t', 'event'], ['ec', category], ['ea', action]]), options);
 
       var t = require('typical');
       if (t.isDefined(options.label)) hit.set('el', options.label);
@@ -104,13 +106,7 @@ var UsageStats = function () {
       options = options || {};
       if (options.hitParams && !(options.hitParams instanceof Map)) throw new Error('map instance required');
 
-      var hit = this._createHit(new Map([['t', 'screenview'], ['cd', name]]));
-      if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
-      if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
-      if (this._sessionStarted) {
-        hit.set('sc', 'start');
-        this._sessionStarted = false;
-      }
+      var hit = this._createHit(new Map([['t', 'screenview'], ['cd', name]]), options);
       this._hits.push(hit);
       return this;
     }
@@ -119,13 +115,7 @@ var UsageStats = function () {
     value: function exception(description, isFatal, options) {
       if (this._disabled) return this;
       options = options || {};
-      var hit = this._createHit(new Map([['t', 'exception'], ['exd', description], ['exf', isFatal ? 1 : 0]]));
-      if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
-      if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
-      if (this._sessionStarted) {
-        hit.set('sc', 'start');
-        this._sessionStarted = false;
-      }
+      var hit = this._createHit(new Map([['t', 'exception'], ['exd', description], ['exf', isFatal ? 1 : 0]]), options);
       this._hits.push(hit);
       return this;
     }
@@ -136,7 +126,6 @@ var UsageStats = function () {
 
       if (this._disabled) return Promise.resolve([]);
       options = options || {};
-
       var toSend = this._dequeue().concat(this._hits);
       this._hits.length = 0;
 
@@ -174,12 +163,6 @@ var UsageStats = function () {
         var _loop2 = function _loop2() {
           var batch = toSend.splice(0, 20);
           var req = _this._request(reqOptions, _this._createHitsPayload(batch)).then(validGAResponse).catch(function (err) {
-            batch = batch.map(function (hit) {
-              if (err.name === 'aborted') hit.set('cd4', true);
-
-              hit.set('cd5', true);
-              return hit;
-            });
             _this._enqueue(batch);
             return {
               err: err
@@ -193,10 +176,6 @@ var UsageStats = function () {
         }
         return Promise.all(requests).then(function (results) {
           if (_this._aborted) {
-            toSend = toSend.map(function (hit) {
-              hit.set('cd5', true);
-              return hit;
-            });
             _this._enqueue(toSend);
             _this._aborted = false;
           }

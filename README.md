@@ -28,7 +28,7 @@ usageStats
 
 ### Typical
 
-More realistic usage. 
+More realistic usage.
 
 ```js
 const UsageStats = require('usage-stats')
@@ -67,11 +67,6 @@ Beside tracking events, exceptions and screenviews, the follow stats are collect
 * [Client ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#cid) (a random UUID, generated once per OS user and stored)
 * [Language](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ul) (`process.env.LANG`, if set)
 * [Screen resolution](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sr) (terminal rows by columns, by default)
-
-### Custom info optionally sent
-
-* Node.js version (sent as a Custom Dimension)
-
 
 ## API Reference
 
@@ -114,7 +109,7 @@ const UsageStats = require('usage-stats')
 | [options.lang] | <code>string</code> | Language. Defaults to `process.env.LANG`. |
 | [options.sr] | <code>string</code> | Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`. |
 | [options.ua] | <code>string</code> | User Agent string to use. |
-| [options.dir] | <code>string</code> | Path of the directory used for persisting clientID and queue. |
+| [options.dir] | <code>string</code> | Path of the directory used for persisting clientID and queue. Defaults to `~/.usage-stats`. |
 | [options.url] | <code>string</code> | Defaults to `'https://www.google-analytics.com/batch'`. |
 | [options.debugUrl] | <code>string</code> | Defaults to `'https://www.google-analytics.com/debug/collect'`. |
 
@@ -137,6 +132,14 @@ Cache directory where the queue and client ID is kept. Defaults to `~/.usage-sta
 Set parameters on this map to send them with every hit.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Example**  
+```js
+usageStats.defaults
+  .set('cd1', process.version)
+  .set('cd2', os.type())
+  .set('cd3', os.release())
+  .set('cd4', 'api')
+```
 <a name="module_usage-stats--UsageStats+start"></a>
 
 #### usageStats.start([sessionParams]) ↩︎

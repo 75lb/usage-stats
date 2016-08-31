@@ -23,7 +23,7 @@ class UsageStats {
    * @param [options.lang] {string} - Language. Defaults to `process.env.LANG`.
    * @param [options.sr] {string} - Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`.
    * @param [options.ua] {string} - User Agent string to use.
-   * @param [options.dir] {string} - Path of the directory used for persisting clientID and queue.
+   * @param [options.dir] {string} - Path of the directory used for persisting clientID and queue. Defaults to `~/.usage-stats`.
    * @param [options.url] {string} - Defaults to `'https://www.google-analytics.com/batch'`.
    * @param [options.debugUrl] {string} - Defaults to `'https://www.google-analytics.com/debug/collect'`.
    * @example
@@ -56,6 +56,12 @@ class UsageStats {
     /**
      * Set parameters on this map to send them with every hit.
      * @type {Map}
+     * @example
+     * usageStats.defaults
+     *   .set('cd1', process.version)
+     *   .set('cd2', os.type())
+     *   .set('cd3', os.release())
+     *   .set('cd4', 'api')
      */
     this.defaults = new Map([
       [ 'v', 1 ],
@@ -126,9 +132,17 @@ class UsageStats {
     return this
   }
 
-  _createHit (map) {
+  _createHit (map, options) {
     if (map && !(map instanceof Map)) throw new Error('map instance required')
-    return new Map([ ...this.defaults, ...map ])
+    options = options || {}
+    let hit = new Map([ ...this.defaults, ...map ])
+    if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
+    if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
+    if (this._sessionStarted) {
+      hit.set('sc', 'start')
+      this._sessionStarted = false
+    }
+    return hit
   }
 
   /**
@@ -150,13 +164,7 @@ class UsageStats {
       [ 't', 'event' ],
       [ 'ec', category ],
       [ 'ea', action ]
-    ]))
-    if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
-    if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
-    if (this._sessionStarted) {
-      hit.set('sc', 'start')
-      this._sessionStarted = false
-    }
+    ]), options)
 
     const t = require('typical')
     if (t.isDefined(options.label)) hit.set('el', options.label)
@@ -180,13 +188,7 @@ class UsageStats {
     let hit = this._createHit(new Map([
       [ 't', 'screenview' ],
       [ 'cd', name ],
-    ]))
-    if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
-    if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
-    if (this._sessionStarted) {
-      hit.set('sc', 'start')
-      this._sessionStarted = false
-    }
+    ]), options)
     this._hits.push(hit)
     return this
   }
@@ -205,13 +207,7 @@ class UsageStats {
       [ 't', 'exception' ],
       [ 'exd', description ],
       [ 'exf', isFatal ? 1 : 0 ]
-    ]))
-    if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
-    if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
-    if (this._sessionStarted) {
-      hit.set('sc', 'start')
-      this._sessionStarted = false
-    }
+    ]), options)
     this._hits.push(hit)
     return this
   }
@@ -226,7 +222,6 @@ class UsageStats {
   send (options) {
     if (this._disabled) return Promise.resolve([])
     options = options || {}
-
     let toSend = this._dequeue().concat(this._hits)
     this._hits.length = 0
 
@@ -266,13 +261,6 @@ class UsageStats {
           .then(validGAResponse)
           .catch(err => {
             /* network fail, aborted or unexpected response */
-            batch = batch.map(hit => {
-              /* aborted flag */
-              if (err.name === 'aborted') hit.set('cd4', true)
-              /* queued flag */
-              hit.set('cd5', true)
-              return hit
-            })
             this._enqueue(batch)
             return {
               err: err
@@ -283,11 +271,6 @@ class UsageStats {
       return Promise.all(requests)
         .then(results => {
           if (this._aborted) {
-            toSend = toSend.map(hit => {
-              /* queued flag */
-              hit.set('cd5', true)
-              return hit
-            })
             this._enqueue(toSend)
             this._aborted = false
           }
