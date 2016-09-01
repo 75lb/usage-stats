@@ -76,6 +76,7 @@ class UsageStats {
     ])
 
     this._requestControllers = []
+    this._aborted = false
   }
 
   get dir () {
@@ -270,6 +271,7 @@ class UsageStats {
       }
       return Promise.all(requests)
         .then(results => {
+          this._requestControllers = []
           if (this._aborted) {
             this._enqueue(toSend)
             this._aborted = false

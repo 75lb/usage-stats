@@ -36,6 +36,7 @@ var UsageStats = function () {
     this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion()], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
 
     this._requestControllers = [];
+    this._aborted = false;
   }
 
   _createClass(UsageStats, [{
@@ -175,6 +176,7 @@ var UsageStats = function () {
           _loop2();
         }
         return Promise.all(requests).then(function (results) {
+          _this._requestControllers = [];
           if (_this._aborted) {
             _this._enqueue(toSend);
             _this._aborted = false;
