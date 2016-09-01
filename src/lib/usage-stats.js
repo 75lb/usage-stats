@@ -75,7 +75,7 @@ class UsageStats {
       [ 'av', options.version || '' ]
     ])
 
-    this._requestController = {}
+    this._requestControllers = []
   }
 
   get dir () {
@@ -231,11 +231,10 @@ class UsageStats {
     reqOptions.headers = {
       'content-type': 'text/plain'
     }
-    reqOptions.controller = this._requestController
 
     const requests = []
     if (options.debug) {
-      while (toSend.length && !this._aborted) {
+      while (toSend.length) {
         let batch = toSend.splice(0, 20)
         const req = this._request(reqOptions, this._createHitsPayload(batch))
           .then(validGAResponse)
@@ -257,6 +256,7 @@ class UsageStats {
     } else {
       while (toSend.length && !this._aborted) {
         let batch = toSend.splice(0, 20)
+        reqOptions.controller = this._requestControllers[requests.length] = {}
         const req = this._request(reqOptions, this._createHitsPayload(batch))
           .then(validGAResponse)
           .catch(err => {
@@ -285,9 +285,11 @@ class UsageStats {
    */
   abort () {
     if (this._disabled) return this
-    if (this._requestController && this._requestController.abort) {
-      this._aborted = true
-      this._requestController.abort()
+    for (const controller of this._requestControllers) {
+      if (controller && controller.abort) {
+        this._aborted = true
+        controller.abort()
+      }
     }
     return this
   }

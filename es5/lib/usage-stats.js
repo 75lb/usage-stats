@@ -35,7 +35,7 @@ var UsageStats = function () {
 
     this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion()], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
 
-    this._requestController = {};
+    this._requestControllers = [];
   }
 
   _createClass(UsageStats, [{
@@ -135,7 +135,6 @@ var UsageStats = function () {
       reqOptions.headers = {
         'content-type': 'text/plain'
       };
-      reqOptions.controller = this._requestController;
 
       var requests = [];
       if (options.debug) {
@@ -155,13 +154,14 @@ var UsageStats = function () {
           requests.push(req);
         };
 
-        while (toSend.length && !this._aborted) {
+        while (toSend.length) {
           _loop();
         }
         return Promise.all(requests);
       } else {
         var _loop2 = function _loop2() {
           var batch = toSend.splice(0, 20);
+          reqOptions.controller = _this._requestControllers[requests.length] = {};
           var req = _this._request(reqOptions, _this._createHitsPayload(batch)).then(validGAResponse).catch(function (err) {
             _this._enqueue(batch);
             return {
@@ -187,10 +187,34 @@ var UsageStats = function () {
     key: 'abort',
     value: function abort() {
       if (this._disabled) return this;
-      if (this._requestController && this._requestController.abort) {
-        this._aborted = true;
-        this._requestController.abort();
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = this._requestControllers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var controller = _step.value;
+
+          if (controller && controller.abort) {
+            this._aborted = true;
+            controller.abort();
+          }
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
       }
+
       return this;
     }
   }, {
