@@ -162,7 +162,8 @@ var UsageStats = function () {
       } else {
         var _loop2 = function _loop2() {
           var batch = toSend.splice(0, 20);
-          reqOptions.controller = _this._requestControllers[requests.length] = {};
+          reqOptions.controller = {};
+          _this._requestControllers.push(reqOptions.controller);
           var req = _this._request(reqOptions, _this._createHitsPayload(batch)).then(validGAResponse).catch(function (err) {
             _this._enqueue(batch);
             return {
@@ -189,34 +190,13 @@ var UsageStats = function () {
     key: 'abort',
     value: function abort() {
       if (this._disabled) return this;
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
-
-      try {
-        for (var _iterator = this._requestControllers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var controller = _step.value;
-
-          if (controller && controller.abort) {
-            this._aborted = true;
-            controller.abort();
-          }
-        }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
+      while (this._requestControllers.length) {
+        var controller = this._requestControllers.shift();
+        if (controller && controller.abort) {
+          this._aborted = true;
+          controller.abort();
         }
       }
-
       return this;
     }
   }, {

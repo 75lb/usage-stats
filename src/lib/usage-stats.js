@@ -257,7 +257,8 @@ class UsageStats {
     } else {
       while (toSend.length && !this._aborted) {
         let batch = toSend.splice(0, 20)
-        reqOptions.controller = this._requestControllers[requests.length] = {}
+        reqOptions.controller = {}
+        this._requestControllers.push(reqOptions.controller)
         const req = this._request(reqOptions, this._createHitsPayload(batch))
           .then(validGAResponse)
           .catch(err => {
@@ -287,7 +288,8 @@ class UsageStats {
    */
   abort () {
     if (this._disabled) return this
-    for (const controller of this._requestControllers) {
+    while (this._requestControllers.length) {
+      const controller = this._requestControllers.shift()
       if (controller && controller.abort) {
         this._aborted = true
         controller.abort()
