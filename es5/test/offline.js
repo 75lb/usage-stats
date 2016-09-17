@@ -15,9 +15,37 @@ var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 
-runner.test('.send(): failed with nothing queued - hit is queued', function () {
+runner.test('.send(): failed with nothing queued - err is set', function () {
   var UsageTest = function (_UsageStats) {
     _inherits(UsageTest, _UsageStats);
+
+    function UsageTest() {
+      _classCallCheck(this, UsageTest);
+
+      return _possibleConstructorReturn(this, (UsageTest.__proto__ || Object.getPrototypeOf(UsageTest)).apply(this, arguments));
+    }
+
+    _createClass(UsageTest, [{
+      key: '_request',
+      value: function _request() {
+        return Promise.reject(new Error('failed'));
+      }
+    }]);
+
+    return UsageTest;
+  }(UsageStats);
+
+  var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') });
+  testStats.screenView('test');
+  return testStats.send().then(function (responses) {
+    var response = responses[0];
+    a.strictEqual(response.err.message, 'failed');
+  });
+});
+
+runner.test('.send(): failed with nothing queued - hit is queued', function () {
+  var UsageTest = function (_UsageStats2) {
+    _inherits(UsageTest, _UsageStats2);
 
     function UsageTest() {
       _classCallCheck(this, UsageTest);
@@ -45,8 +73,8 @@ runner.test('.send(): failed with nothing queued - hit is queued', function () {
 });
 
 runner.test('.send(): failed with something queued - all hits queued', function () {
-  var UsageTest = function (_UsageStats2) {
-    _inherits(UsageTest, _UsageStats2);
+  var UsageTest = function (_UsageStats3) {
+    _inherits(UsageTest, _UsageStats3);
 
     function UsageTest() {
       _classCallCheck(this, UsageTest);

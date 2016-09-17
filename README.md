@@ -99,7 +99,7 @@ const UsageStats = require('usage-stats')
         * [.abort()](#module_usage-stats--UsageStats+abort) ↩︎
         * [.load()](#module_usage-stats--UsageStats+load) ↩︎
         * [.save()](#module_usage-stats--UsageStats+save) ↩︎
-        * [.hitsQueued()](#module_usage-stats--UsageStats+hitsQueued) ⇒ <code>number</code>
+        * [.queueLength()](#module_usage-stats--UsageStats+queueLength) ⇒ <code>number</code>
 
 <a name="exp_module_usage-stats--UsageStats"></a>
 
@@ -263,9 +263,9 @@ Dumps unsent hits to the queue. They will dequeued and sent on next invocation o
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Chainable**  
-<a name="module_usage-stats--UsageStats+hitsQueued"></a>
+<a name="module_usage-stats--UsageStats+queueLength"></a>
 
-#### usageStats.hitsQueued() ⇒ <code>number</code>
+#### usageStats.queueLength() ⇒ <code>number</code>
 Return the total hits stored on the queue.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  

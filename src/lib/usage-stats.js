@@ -303,7 +303,7 @@ class UsageStats {
   }
 
   /**
-   * Dumps unsent hits to the queue. They will dequeued and sent on next invocation of `.send()`.
+   * Loads queued hits.
    * @chainable
    */
   load () {
@@ -312,7 +312,7 @@ class UsageStats {
   }
 
   /**
-   * Dumps unsent hits to the queue. They will dequeued and sent on next invocation of `.send()`.
+   * Dumps unsent hits to the queue. They will be dequeued and sent on the next invocation of `.send()`.
    * @chainable
    */
   save () {
@@ -325,7 +325,7 @@ class UsageStats {
    * Return the total hits stored on the queue.
    * @returns {number}
    */
-  hitsQueued () {
+  queueLength () {
     let hits = []
     try {
       const queue = fs.readFileSync(this._queuePath, 'utf8')

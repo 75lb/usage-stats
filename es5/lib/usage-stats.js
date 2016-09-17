@@ -23,7 +23,6 @@ var UsageStats = function () {
     var homePath = require('home-path');
 
     this.dir = options.dir || path.resolve(homePath(), '.usage-stats');
-
     this._queuePath = path.resolve(this.dir, 'queue');
     this._disabled = false;
     this._hits = [];
@@ -33,7 +32,9 @@ var UsageStats = function () {
       batch: options.url || 'https://www.google-analytics.com/batch'
     };
 
-    this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion()], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()], ['an', options.name || ''], ['av', options.version || '']]);
+    this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion()], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()]]);
+    if (options.name) this.defaults.set('an', options.name);
+    if (options.version) this.defaults.set('av', options.version);
 
     this._requestControllers = [];
     this._aborted = false;
@@ -49,12 +50,16 @@ var UsageStats = function () {
     }
   }, {
     key: 'end',
-    value: function end() {
+    value: function end(sessionParams) {
       if (this._disabled) return this;
       if (this._hits.length === 1) {
-        this._hits[0].set('sc', 'end');
+        var hit = this._hits[0];
+        hit.set('sc', 'end');
+        if (sessionParams) hit = new Map([].concat(_toConsumableArray(hit), [sessionParams]));
       } else if (this._hits.length > 1) {
-        this._hits[this._hits.length - 1].set('sc', 'end');
+        var _hit = this._hits[this._hits.length - 1];
+        _hit.set('sc', 'end');
+        if (sessionParams) _hit = new Map([].concat(_toConsumableArray(_hit), [sessionParams]));
       }
       if (this._sessionParams) delete this._sessionParams;
       return this;
@@ -76,7 +81,7 @@ var UsageStats = function () {
     value: function _createHit(map, options) {
       if (map && !(map instanceof Map)) throw new Error('map instance required');
       options = options || {};
-      var hit = new Map([].concat(_toConsumableArray(this.defaults), _toConsumableArray(map)));
+      var hit = new Map([].concat(_toConsumableArray(this.defaults), _toConsumableArray(map || new Map())));
       if (options.hitParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(options.hitParams)));
       if (this._sessionParams) hit = new Map([].concat(_toConsumableArray(hit), _toConsumableArray(this._sessionParams)));
       if (this._sessionStarted) {
@@ -98,7 +103,7 @@ var UsageStats = function () {
       if (t.isDefined(options.label)) hit.set('el', options.label);
       if (t.isDefined(options.value)) hit.set('ev', options.value);
       this._hits.push(hit);
-      return this;
+      return hit;
     }
   }, {
     key: 'screenView',
@@ -109,7 +114,7 @@ var UsageStats = function () {
 
       var hit = this._createHit(new Map([['t', 'screenview'], ['cd', name]]), options);
       this._hits.push(hit);
-      return this;
+      return hit;
     }
   }, {
     key: 'exception',
@@ -118,7 +123,7 @@ var UsageStats = function () {
       options = options || {};
       var hit = this._createHit(new Map([['t', 'exception'], ['exd', description], ['exf', isFatal ? 1 : 0]]), options);
       this._hits.push(hit);
-      return this;
+      return hit;
     }
   }, {
     key: 'send',
@@ -200,6 +205,12 @@ var UsageStats = function () {
       return this;
     }
   }, {
+    key: 'load',
+    value: function load() {
+      this._hits = this._dequeue();
+      return this;
+    }
+  }, {
     key: 'save',
     value: function save() {
       this._enqueue(this._hits);
@@ -207,8 +218,8 @@ var UsageStats = function () {
       return this;
     }
   }, {
-    key: 'hitsQueued',
-    value: function hitsQueued() {
+    key: 'queueLength',
+    value: function queueLength() {
       var hits = [];
       try {
         var queue = fs.readFileSync(this._queuePath, 'utf8');

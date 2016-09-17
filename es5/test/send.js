@@ -24,6 +24,7 @@ runner.test('.send(): screenview (live)', function () {
 
   testStats.screenView(this.name);
   return testStats.send().then(function (responses) {
+    if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
     return responses.map(function (response) {
       return response.res.statusCode;
     });
@@ -53,6 +54,7 @@ runner.test('.send(): successful with nothing queued - still nothing queued', fu
   var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
+    if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
     a.strictEqual(responses.length, 1);
     a.strictEqual(responses[0].data, 'test');
     var queued = testStats._dequeue();
@@ -92,6 +94,7 @@ runner.test('.send(): successful with something queued - all hits sent and queue
   testStats._enqueue(hit);
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
+    if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
     var queued = testStats._dequeue();
     a.strictEqual(queued.length, 0);
   });
