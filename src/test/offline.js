@@ -6,6 +6,22 @@ const os = require('os')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
+runner.test('.send(): failed with nothing queued - err is set', function () {
+  class UsageTest extends UsageStats {
+    _request () {
+      return Promise.reject(new Error('failed'))
+    }
+  }
+
+  const testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') })
+  testStats.screenView('test')
+  return testStats.send()
+    .then(responses => {
+      const response = responses[0]
+      a.strictEqual(response.err.message, 'failed')
+    })
+})
+
 runner.test('.send(): failed with nothing queued - hit is queued', function () {
   class UsageTest extends UsageStats {
     _request () {

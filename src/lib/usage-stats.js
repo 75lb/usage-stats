@@ -43,7 +43,6 @@ class UsageStats {
      * @type {string}
      */
     this.dir = options.dir || path.resolve(homePath(), '.usage-stats')
-
     this._queuePath = path.resolve(this.dir, 'queue')
     this._disabled = false
     this._hits = []
@@ -70,10 +69,10 @@ class UsageStats {
       [ 'cid', this._getClientId() ],
       [ 'ua', options.ua || `Mozilla/5.0 ${this._getOSVersion()}` ],
       [ 'ul', options.lang || process.env.LANG ],
-      [ 'sr', options.sr || this._getScreenResolution() ],
-      [ 'an', options.name || '' ],
-      [ 'av', options.version || '' ]
+      [ 'sr', options.sr || this._getScreenResolution() ]
     ])
+    if (options.name) this.defaults.set('an', options.name)
+    if (options.version) this.defaults.set('av', options.version)
 
     this._requestControllers = []
     this._aborted = false
@@ -90,7 +89,7 @@ class UsageStats {
 
   /**
    * Starts the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
-   * @param [sessionParams] {Map[]} - An option map of paramaters to send with each hit in the sesison.
+   * @param [sessionParams] {Map[]} - An optional map of paramaters to send with each hit in the sesison.
    * @chainable
    */
   start (sessionParams) {
@@ -102,14 +101,19 @@ class UsageStats {
 
   /**
    * Ends the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
+   * @param [sessionParams] {Map[]} - An optional map of paramaters to send with the final hit of this sesison.
    * @chainable
    */
-  end () {
+  end (sessionParams) {
     if (this._disabled) return this
     if (this._hits.length === 1) {
-      this._hits[0].set('sc', 'end')
+      let hit = this._hits[0]
+      hit.set('sc', 'end')
+      if (sessionParams) hit = new Map([ ...hit, sessionParams ])
     } else if (this._hits.length > 1) {
-      this._hits[this._hits.length - 1].set('sc', 'end')
+      let hit = this._hits[this._hits.length - 1]
+      hit.set('sc', 'end')
+      if (sessionParams) hit = new Map([ ...hit, sessionParams ])
     }
     if (this._sessionParams) delete this._sessionParams
     return this
@@ -136,7 +140,7 @@ class UsageStats {
   _createHit (map, options) {
     if (map && !(map instanceof Map)) throw new Error('map instance required')
     options = options || {}
-    let hit = new Map([ ...this.defaults, ...map ])
+    let hit = new Map([ ...this.defaults, ...(map || new Map()) ])
     if (options.hitParams) hit = new Map([ ...hit, ...options.hitParams ])
     if (this._sessionParams) hit = new Map([ ...hit, ...this._sessionParams ])
     if (this._sessionStarted) {
@@ -154,7 +158,7 @@ class UsageStats {
    * @param [options.label] {string} - Event label
    * @param [options.value] {string} - Event value
    * @param [options.hitParams] {map[]} - One or more additional params to send with the hit.
-   * @chainable
+   * @returns {Map}
    */
   event (category, action, options) {
     if (this._disabled) return this
@@ -171,15 +175,15 @@ class UsageStats {
     if (t.isDefined(options.label)) hit.set('el', options.label)
     if (t.isDefined(options.value)) hit.set('ev', options.value)
     this._hits.push(hit)
-    return this
+    return hit
   }
 
   /**
-   * Track a screenview. All screenview hits are queued until `.send()` is called.
+   * Track a screenview. All screenview hits are queued until `.send()` is called. Returns the hit instance.
    * @param {string} - Screen name
    * @param [options] {object}
    * @param [options.hitParams] {map[]} - One or more additional params to set on the hit.
-   * @chainable
+   * @returns {Map}
    */
   screenView (name, options) {
     if (this._disabled) return this
@@ -191,7 +195,7 @@ class UsageStats {
       [ 'cd', name ],
     ]), options)
     this._hits.push(hit)
-    return this
+    return hit
   }
 
   /**
@@ -199,7 +203,7 @@ class UsageStats {
    * @param {string} - Error message
    * @param {boolean} - Set true if the exception was fatal
    * @param [options.hitParams] {map[]} - One or more additional params to set on the hit.
-   * @chainable
+   * @returns {Map}
    */
   exception (description, isFatal, options) {
     if (this._disabled) return this
@@ -210,7 +214,7 @@ class UsageStats {
       [ 'exf', isFatal ? 1 : 0 ]
     ]), options)
     this._hits.push(hit)
-    return this
+    return hit
   }
 
   /**
@@ -295,6 +299,15 @@ class UsageStats {
         controller.abort()
       }
     }
+    return this
+  }
+
+  /**
+   * Dumps unsent hits to the queue. They will dequeued and sent on next invocation of `.send()`.
+   * @chainable
+   */
+  load () {
+    this._hits = this._dequeue()
     return this
   }
 
@@ -388,7 +401,7 @@ class UsageStats {
   /**
    * Returns hits queued.
    * @param [count] {number} - Number of hits to dequeue. Defaults to "all hits".
-   * @return {string[]}
+   * @return {map[]}
    * @private
    * @sync
    */

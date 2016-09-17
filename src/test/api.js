@@ -27,15 +27,18 @@ runner.test('.defaults: sent with every hit', function () {
   a.strictEqual(testStats.defaults.has('tid'), true)
 
   testStats.defaults.set('cd1', 'test')
-  a.strictEqual(testStats.defaults.has('cd1'), true)
+  const hit = testStats._createHit()
+  a.strictEqual(hit.get('v'), 1)
+  a.strictEqual(hit.get('tid'), 'UA-00000000-0')
+  a.strictEqual(hit.get('cd1'), 'test')
 })
 
 runner.test('.screenview(name): creates hit', function () {
   const testStats = new UsageStats('UA-00000000-0')
-  testStats.screenView('test-screen')
+  const hit = testStats.screenView('test-screen')
   a.strictEqual(testStats._hits.length, 1)
-  a.strictEqual(testStats._hits[0].get('t'), 'screenview')
-  a.strictEqual(testStats._hits[0].get('cd'), 'test-screen')
+  a.strictEqual(hit.get('t'), 'screenview')
+  a.strictEqual(hit.get('cd'), 'test-screen')
 })
 
 runner.test('.screenview(name, params)', function () {
@@ -43,12 +46,12 @@ runner.test('.screenview(name, params)', function () {
   const params = new Map()
   params.set('cm1', 1)
   params.set('cm2', 2)
-  testStats.screenView('test-screen', { hitParams: params })
+  const hit = testStats.screenView('test-screen', { hitParams: params })
   a.strictEqual(testStats._hits.length, 1)
-  a.strictEqual(testStats._hits[0].get('t'), 'screenview')
-  a.strictEqual(testStats._hits[0].get('cd'), 'test-screen')
-  a.strictEqual(testStats._hits[0].get('cm1'), 1)
-  a.strictEqual(testStats._hits[0].get('cm2'), 2)
+  a.strictEqual(hit.get('t'), 'screenview')
+  a.strictEqual(hit.get('cd'), 'test-screen')
+  a.strictEqual(hit.get('cm1'), 1)
+  a.strictEqual(hit.get('cm2'), 2)
 })
 
 runner.test('.start(sessionParams): applies sessionParams to all hits in session', function () {
@@ -57,28 +60,28 @@ runner.test('.start(sessionParams): applies sessionParams to all hits in session
     [ 'cd1', 'one' ]
   ])
   testStats.start(sessionParams)
-  testStats.screenView('screen')
-  a.strictEqual(testStats._hits[0].get('cd'), 'screen')
-  a.strictEqual(testStats._hits[0].get('cd1'), 'one')
-  a.strictEqual(testStats._hits[0].get('sc'), 'start')
+  let hit = testStats.screenView('screen')
+  a.strictEqual(hit.get('cd'), 'screen')
+  a.strictEqual(hit.get('cd1'), 'one')
+  a.strictEqual(hit.get('sc'), 'start')
 
-  testStats.event('category1', 'action1')
-  a.strictEqual(testStats._hits[1].get('ec'), 'category1')
-  a.strictEqual(testStats._hits[1].get('cd1'), 'one')
-  a.strictEqual(testStats._hits[1].get('sc'), undefined)
+  hit = testStats.event('category1', 'action1')
+  a.strictEqual(hit.get('ec'), 'category1')
+  a.strictEqual(hit.get('cd1'), 'one')
+  a.strictEqual(hit.get('sc'), undefined)
 
-  testStats.event('category2', 'action2')
-  a.strictEqual(testStats._hits[2].get('ec'), 'category2')
-  a.strictEqual(testStats._hits[2].get('cd1'), 'one')
-  a.strictEqual(testStats._hits[2].get('sc'), undefined)
+  hit = testStats.event('category2', 'action2')
+  a.strictEqual(hit.get('ec'), 'category2')
+  a.strictEqual(hit.get('cd1'), 'one')
+  a.strictEqual(hit.get('sc'), undefined)
 
   testStats.end()
-  a.strictEqual(testStats._hits[2].get('sc'), 'end')
+  a.strictEqual(hit.get('sc'), 'end')
 
-  testStats.screenView('screen2')
-  a.strictEqual(testStats._hits[3].get('cd'), 'screen2')
-  a.strictEqual(testStats._hits[3].get('cd1'), undefined)
-  a.strictEqual(testStats._hits[3].get('sc'), undefined)
+  hit = testStats.screenView('screen2')
+  a.strictEqual(hit.get('cd'), 'screen2')
+  a.strictEqual(hit.get('cd1'), undefined)
+  a.strictEqual(hit.get('sc'), undefined)
 
   a.strictEqual(testStats._hits.length, 4)
 })
@@ -95,40 +98,40 @@ runner.test('.event(): validation', function () {
 
 runner.test('.event(category, action): no optionals, creates hit', function () {
   const testStats = new UsageStats('UA-00000000-0')
-  testStats.event('test-category', 'test-action')
+  const hit = testStats.event('test-category', 'test-action')
   a.strictEqual(testStats._hits.length, 1)
-  a.strictEqual(testStats._hits[0].get('ec'), 'test-category')
-  a.strictEqual(testStats._hits[0].get('ea'), 'test-action')
-  a.strictEqual(testStats._hits[0].has('el'), false)
-  a.strictEqual(testStats._hits[0].has('ev'), false)
+  a.strictEqual(hit.get('ec'), 'test-category')
+  a.strictEqual(hit.get('ea'), 'test-action')
+  a.strictEqual(hit.has('el'), false)
+  a.strictEqual(hit.has('ev'), false)
 })
 
 runner.test('.event(category, action): with optionals, creates hit', function () {
   const testStats = new UsageStats('UA-00000000-0')
-  testStats.event('test-category', 'test-action', {
+  const hit = testStats.event('test-category', 'test-action', {
     label: 'label',
     value: 'value'
   })
   a.strictEqual(testStats._hits.length, 1)
-  a.strictEqual(testStats._hits[0].get('ec'), 'test-category')
-  a.strictEqual(testStats._hits[0].get('ea'), 'test-action')
-  a.strictEqual(testStats._hits[0].get('el'), 'label')
-  a.strictEqual(testStats._hits[0].get('ev'), 'value')
+  a.strictEqual(hit.get('ec'), 'test-category')
+  a.strictEqual(hit.get('ea'), 'test-action')
+  a.strictEqual(hit.get('el'), 'label')
+  a.strictEqual(hit.get('ev'), 'value')
 })
 
 runner.test('.event(options, hitParams): creates hit and applies hit params', function () {
   const testStats = new UsageStats('UA-00000000-0')
-  testStats.event('test-category', 'test-action', {
+  const hit = testStats.event('test-category', 'test-action', {
     hitParams: new Map([
       [ 'cd1', 'cd1' ],
       [ 'cd2', 'cd2' ]
     ])
   })
   a.strictEqual(testStats._hits.length, 1)
-  a.strictEqual(testStats._hits[0].get('ec'), 'test-category')
-  a.strictEqual(testStats._hits[0].get('ea'), 'test-action')
-  a.strictEqual(testStats._hits[0].get('cd1'), 'cd1')
-  a.strictEqual(testStats._hits[0].get('cd2'), 'cd2')
+  a.strictEqual(hit.get('ec'), 'test-category')
+  a.strictEqual(hit.get('ea'), 'test-action')
+  a.strictEqual(hit.get('cd1'), 'cd1')
+  a.strictEqual(hit.get('cd2'), 'cd2')
 })
 
 runner.test('._enqueue(hits): writes hits to cacheDir', function () {
@@ -195,11 +198,11 @@ runner.test('._createHitsPayload(hits): returns correct form data', function () 
 
 runner.test('.exception(msg, isFatal)', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
-  testStats.exception('test', 1)
+  const hit = testStats.exception('test', 1)
   a.strictEqual(testStats._hits.length, 1)
-  a.strictEqual(testStats._hits[0].get('t'), 'exception')
-  a.strictEqual(testStats._hits[0].get('exd'), 'test')
-  a.strictEqual(testStats._hits[0].get('exf'), 1)
+  a.strictEqual(hit.get('t'), 'exception')
+  a.strictEqual(hit.get('exd'), 'test')
+  a.strictEqual(hit.get('exf'), 1)
 })
 
 runner.test('exception hitParams', function () {

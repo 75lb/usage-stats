@@ -17,6 +17,7 @@ runner.test('.send({ debug: true }) live screenview: resolves with result, hit q
   return testStats.send({ debug: true })
     .then(responses => {
       const response = responses[0]
+      if (response.err && response.err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test")
       a.strictEqual(response.hits.length, 1)
       a.strictEqual(response.hits[0].get('t'), 'screenview')
       a.strictEqual(response.result.hitParsingResult[0].valid, true)
@@ -37,6 +38,7 @@ runner.test('.send({ debug: true }) live screenview with something queued: resol
   return testStats.send({ debug: true })
     .then(responses => {
       const response = responses[0]
+      if (response.err && response.err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test")
       a.strictEqual(response.hits.length, 2)
       a.strictEqual(response.hits[0].get('one'), 'test')
       a.strictEqual(response.hits[1].get('t'), 'screenview')
