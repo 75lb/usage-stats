@@ -88,6 +88,7 @@ const UsageStats = require('usage-stats')
         * [new UsageStats(trackingId, [options])](#new_module_usage-stats--UsageStats_new)
         * [.dir](#module_usage-stats--UsageStats.UsageStats+dir) : <code>string</code>
         * [.defaults](#module_usage-stats--UsageStats.UsageStats+defaults) : <code>Map</code>
+        * [.queueLength](#module_usage-stats--UsageStats+queueLength) ⇒ <code>number</code>
         * [.start([sessionParams])](#module_usage-stats--UsageStats+start) ↩︎
         * [.end([sessionParams])](#module_usage-stats--UsageStats+end) ↩︎
         * [.disable()](#module_usage-stats--UsageStats+disable) ↩︎
@@ -96,10 +97,10 @@ const UsageStats = require('usage-stats')
         * [.screenView(name, [options])](#module_usage-stats--UsageStats+screenView) ⇒ <code>Map</code>
         * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ⇒ <code>Map</code>
         * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
+        * [.debug()](#module_usage-stats--UsageStats+debug) ⇒ <code>Promise</code>
         * [.abort()](#module_usage-stats--UsageStats+abort) ↩︎
         * [.load()](#module_usage-stats--UsageStats+load) ↩︎
         * [.save()](#module_usage-stats--UsageStats+save) ↩︎
-        * [.queueLength()](#module_usage-stats--UsageStats+queueLength) ⇒ <code>number</code>
 
 <a name="exp_module_usage-stats--UsageStats"></a>
 
@@ -149,6 +150,12 @@ usageStats.defaults
   .set('cd3', os.release())
   .set('cd4', 'api')
 ```
+<a name="module_usage-stats--UsageStats+queueLength"></a>
+
+#### usageStats.queueLength ⇒ <code>number</code>
+Return the total hits stored on the queue.
+
+**Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats+start"></a>
 
 #### usageStats.start([sessionParams]) ↩︎
@@ -242,6 +249,14 @@ Send queued stats using as few requests as possible (typically a single request 
 | [options] | <code>object</code> |  |
 | [options.debug] | <code>boolean</code> | [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result. |
 
+<a name="module_usage-stats--UsageStats+debug"></a>
+
+#### usageStats.debug() ⇒ <code>Promise</code>
+Send any hits (including queued) to the GA [validation server](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result.
+
+**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Fulfil**: <code>Response[]</code>  
+**Reject**: <code>Error</code> - Error instance includes `hits`.  
 <a name="module_usage-stats--UsageStats+abort"></a>
 
 #### usageStats.abort() ↩︎
@@ -252,23 +267,17 @@ Aborts the in-progress .send() operation, queuing any unsent hits.
 <a name="module_usage-stats--UsageStats+load"></a>
 
 #### usageStats.load() ↩︎
-Dumps unsent hits to the queue. They will dequeued and sent on next invocation of `.send()`.
+Loads queued hits.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Chainable**  
 <a name="module_usage-stats--UsageStats+save"></a>
 
 #### usageStats.save() ↩︎
-Dumps unsent hits to the queue. They will dequeued and sent on next invocation of `.send()`.
+Dumps unsent hits to the queue. They will be dequeued and sent on the next invocation of `.send()`.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Chainable**  
-<a name="module_usage-stats--UsageStats+queueLength"></a>
-
-#### usageStats.queueLength() ⇒ <code>number</code>
-Return the total hits stored on the queue.
-
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 
 * * *
 

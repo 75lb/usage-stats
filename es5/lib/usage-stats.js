@@ -12,6 +12,7 @@ var path = require('path');
 var os = require('os');
 var fs = require('fs');
 var arrayify = require('array-back');
+var url = require('url');
 
 var UsageStats = function () {
   function UsageStats(trackingId, options) {
@@ -132,64 +133,82 @@ var UsageStats = function () {
 
       if (this._disabled) return Promise.resolve([]);
       options = options || {};
+
       var toSend = this._dequeue().concat(this._hits);
       this._hits.length = 0;
 
-      var url = require('url');
-      var reqOptions = url.parse(options.debug ? this._url.debug : this._url.batch);
+      var reqOptions = url.parse(this._url.batch);
       reqOptions.method = 'POST';
-      reqOptions.headers = {
-        'content-type': 'text/plain'
-      };
+      reqOptions.headers = { 'content-type': 'text/plain' };
 
       var requests = [];
-      if (options.debug) {
-        var _loop = function _loop() {
-          var batch = toSend.splice(0, 20);
-          var req = _this._request(reqOptions, _this._createHitsPayload(batch)).then(validGAResponse).then(function (response) {
-            return {
-              hits: batch,
-              result: JSON.parse(response.data.toString())
-            };
-          }).catch(function (err) {
-            return {
-              hits: batch,
-              err: err
-            };
-          });
-          requests.push(req);
-        };
 
-        while (toSend.length) {
-          _loop();
-        }
-        return Promise.all(requests);
-      } else {
-        var _loop2 = function _loop2() {
-          var batch = toSend.splice(0, 20);
-          reqOptions.controller = {};
-          _this._requestControllers.push(reqOptions.controller);
-          var req = _this._request(reqOptions, _this._createHitsPayload(batch)).then(validGAResponse).catch(function (err) {
-            _this._enqueue(batch);
-            return {
-              err: err
-            };
-          });
-          requests.push(req);
-        };
-
-        while (toSend.length && !this._aborted) {
-          _loop2();
-        }
-        return Promise.all(requests).then(function (results) {
-          _this._requestControllers = [];
-          if (_this._aborted) {
-            _this._enqueue(toSend);
-            _this._aborted = false;
-          }
-          return results;
-        });
+      while (toSend.length && !this._aborted) {
+        var batch = toSend.splice(0, 20);
+        reqOptions.controller = {};
+        this._requestControllers.push(reqOptions.controller);
+        var req = this._sendBatch(reqOptions, batch, true);
+        requests.push(req);
       }
+
+      return Promise.all(requests).then(function (results) {
+        _this._requestControllers = [];
+        return results;
+      }).catch(function (err) {
+        _this._requestControllers = [];
+        if (_this._aborted) {
+          _this._aborted = false;
+        }
+        throw err;
+      });
+    }
+  }, {
+    key: 'debug',
+    value: function debug() {
+      var _this2 = this;
+
+      if (this._disabled) return Promise.resolve([]);
+      var toSend = this._dequeue().concat(this._hits);
+      this._hits.length = 0;
+
+      var reqOptions = url.parse(this._url.debug);
+      reqOptions.method = 'POST';
+      reqOptions.headers = { 'content-type': 'text/plain' };
+
+      var requests = [];
+
+      var _loop = function _loop() {
+        var batch = toSend.splice(0, 20);
+        var req = _this2._sendBatch(reqOptions, batch).then(function (response) {
+          return {
+            hits: batch,
+            result: JSON.parse(response.data.toString())
+          };
+        });
+        requests.push(req);
+      };
+
+      while (toSend.length) {
+        _loop();
+      }
+      return Promise.all(requests);
+    }
+  }, {
+    key: '_sendBatch',
+    value: function _sendBatch(reqOptions, batch, enqueue) {
+      var _this3 = this;
+
+      return this._request(reqOptions, this._createHitsPayload(batch)).then(function (response) {
+        if (response.res.statusCode >= 300) {
+          throw new Error('Unexpected response');
+        } else {
+          return response;
+        }
+      }).catch(function (err) {
+        err.hits = batch;
+        if (enqueue) _this3._enqueue(batch);
+        throw err;
+      });
     }
   }, {
     key: 'abort',
@@ -216,20 +235,6 @@ var UsageStats = function () {
       this._enqueue(this._hits);
       this._hits.length = 0;
       return this;
-    }
-  }, {
-    key: 'queueLength',
-    value: function queueLength() {
-      var hits = [];
-      try {
-        var queue = fs.readFileSync(this._queuePath, 'utf8');
-        hits = queue.trim().split(os.EOL);
-      } catch (err) {
-        if (err.code !== 'ENOENT') {
-          throw err;
-        }
-      }
-      return hits.length;
     }
   }, {
     key: '_getClientId',
@@ -342,6 +347,20 @@ var UsageStats = function () {
       var mkdirp = require('mkdirp');
       mkdirp.sync(this._dir);
     }
+  }, {
+    key: 'queueLength',
+    get: function get() {
+      var hits = [];
+      try {
+        var queue = fs.readFileSync(this._queuePath, 'utf8');
+        hits = queue.trim().split(os.EOL);
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          throw err;
+        }
+      }
+      return hits.length;
+    }
   }]);
 
   return UsageStats;
@@ -361,14 +380,6 @@ function jsonToHits(json) {
     });
   } else {
     return [];
-  }
-}
-
-function validGAResponse(response) {
-  if (response.res.statusCode >= 300) {
-    throw new Error('Unexpected response');
-  } else {
-    return response;
   }
 }
 

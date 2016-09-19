@@ -3,6 +3,7 @@ const path = require('path')
 const os = require('os')
 const fs = require('fs')
 const arrayify = require('array-back')
+const url = require('url')
 
 /**
  * @module usage-stats
@@ -227,63 +228,82 @@ class UsageStats {
   send (options) {
     if (this._disabled) return Promise.resolve([])
     options = options || {}
+
     let toSend = this._dequeue().concat(this._hits)
     this._hits.length = 0
 
-    const url = require('url')
-    const reqOptions = url.parse(options.debug ? this._url.debug : this._url.batch)
+    const reqOptions = url.parse(this._url.batch)
     reqOptions.method = 'POST'
-    reqOptions.headers = {
-      'content-type': 'text/plain'
-    }
+    reqOptions.headers = { 'content-type': 'text/plain' }
 
     const requests = []
-    if (options.debug) {
-      while (toSend.length) {
-        let batch = toSend.splice(0, 20)
-        const req = this._request(reqOptions, this._createHitsPayload(batch))
-          .then(validGAResponse)
-          .then(response => {
-            return {
-              hits: batch,
-              result: JSON.parse(response.data.toString())
-            }
-          })
-          .catch(err => {
-            return {
-              hits: batch,
-              err: err
-            }
-          })
-        requests.push(req)
-      }
-      return Promise.all(requests)
-    } else {
-      while (toSend.length && !this._aborted) {
-        let batch = toSend.splice(0, 20)
-        reqOptions.controller = {}
-        this._requestControllers.push(reqOptions.controller)
-        const req = this._request(reqOptions, this._createHitsPayload(batch))
-          .then(validGAResponse)
-          .catch(err => {
-            /* network fail, aborted or unexpected response */
-            this._enqueue(batch)
-            return {
-              err: err
-            }
-          })
-        requests.push(req)
-      }
-      return Promise.all(requests)
-        .then(results => {
-          this._requestControllers = []
-          if (this._aborted) {
-            this._enqueue(toSend)
-            this._aborted = false
-          }
-          return results
-        })
+
+    while (toSend.length && !this._aborted) {
+      let batch = toSend.splice(0, 20)
+      reqOptions.controller = {}
+      this._requestControllers.push(reqOptions.controller)
+      const req = this._sendBatch(reqOptions, batch, true)
+      requests.push(req)
     }
+
+    return Promise.all(requests)
+      .then(results => {
+        this._requestControllers = []
+        return results
+      })
+      .catch(err => {
+        this._requestControllers = []
+        if (this._aborted) {
+          this._aborted = false
+        }
+        throw err
+      })
+  }
+
+  /**
+   * Send any hits (including queued) to the GA [validation server](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result.
+   * @returns {Promise}
+   * @fulfil {Response[]}
+   * @reject {Error} - Error instance includes `hits`.
+   */
+  debug () {
+    if (this._disabled) return Promise.resolve([])
+    let toSend = this._dequeue().concat(this._hits)
+    this._hits.length = 0
+
+    const reqOptions = url.parse(this._url.debug)
+    reqOptions.method = 'POST'
+    reqOptions.headers = { 'content-type': 'text/plain' }
+
+    const requests = []
+    while (toSend.length) {
+      let batch = toSend.splice(0, 20)
+      const req = this._sendBatch(reqOptions, batch)
+        .then(response => {
+          return {
+            hits: batch,
+            result: JSON.parse(response.data.toString())
+          }
+        })
+      requests.push(req)
+    }
+    return Promise.all(requests)
+  }
+
+  _sendBatch (reqOptions, batch, enqueue) {
+    return this._request(reqOptions, this._createHitsPayload(batch))
+      .then(response => {
+        if (response.res.statusCode >= 300) {
+          throw new Error('Unexpected response')
+        } else {
+          return response
+        }
+      })
+      .catch(err => {
+        err.hits = batch
+        if (enqueue) this._enqueue(batch)
+        throw err
+      })
   }
 
   /**
@@ -325,7 +345,7 @@ class UsageStats {
    * Return the total hits stored on the queue.
    * @returns {number}
    */
-  queueLength () {
+  get queueLength () {
     let hits = []
     try {
       const queue = fs.readFileSync(this._queuePath, 'utf8')
@@ -479,14 +499,6 @@ function jsonToHits (json) {
     return hits.map(hitJson => jsonToMap(hitJson))
   } else {
     return []
-  }
-}
-
-function validGAResponse (response) {
-  if (response.res.statusCode >= 300) {
-    throw new Error('Unexpected response')
-  } else {
-    return response
   }
 }
 

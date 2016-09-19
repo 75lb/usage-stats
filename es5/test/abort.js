@@ -7,13 +7,13 @@ var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 
-runner.test('.abort(): abort and queue hit', function () {
+runner.test('.abort(): aborting throws, hit queued', function () {
   var http = require('http');
   var server = http.createServer(function (req, res) {
     setTimeout(function () {
       res.statusCode = 200;
       res.end('yeah?');
-    }, 2000);
+    }, 1000);
   });
   server.listen(9000);
 
@@ -25,8 +25,9 @@ runner.test('.abort(): abort and queue hit', function () {
 
   return new Promise(function (resolve, reject) {
     testStats.send().then(function (responses) {
-      var response = responses[0];
-      a.strictEqual(response.err.name, 'aborted');
+      throw new Error('should not reach here');
+      reject();
+    }).catch(function (err) {
       var queued = testStats._dequeue();
       a.strictEqual(queued.length, 1);
       a.strictEqual(testStats._aborted, false);
@@ -34,61 +35,18 @@ runner.test('.abort(): abort and queue hit', function () {
       resolve();
     }).catch(function (err) {
       server.close();
-      reject();
+      reject(err);
     });
 
-    testStats.abort();
+    setTimeout(testStats.abort.bind(testStats), 50);
   });
 });
 
-runner.test('.abort(): called before .send()', function () {
+runner.test('.abort(): called before .send() is a no-op', function () {
   var testStats = new UsageStats('UA-00000000-0');
   testStats.screenView('test');
   testStats.abort();
   a.ok(!this._aborted);
-});
-
-runner.test('.abort(): multiple requests', function () {
-  var http = require('http');
-  var server = http.createServer(function (req, res) {
-    setTimeout(function () {
-      res.statusCode = 200;
-      res.end('yeah?');
-    }, 2000);
-  });
-  server.listen(9010);
-
-  var testStats = new UsageStats('UA-00000000-0', {
-    dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9010'
-  });
-
-  for (var i = 0; i < 100; i++) {
-    testStats._enqueue(new Map([['hit', i]]));
-  }
-
-  return new Promise(function (resolve, reject) {
-    testStats.send().then(function (responses) {
-      a.strictEqual(responses.length, 5);
-      a.strictEqual(responses[0].err.name, 'aborted');
-      a.strictEqual(responses[1].err.name, 'aborted');
-      a.strictEqual(responses[2].err.name, 'aborted');
-      a.strictEqual(responses[3].err.name, 'aborted');
-      a.strictEqual(responses[4].err.name, 'aborted');
-
-      var queued = testStats._dequeue();
-      a.strictEqual(queued.length, 100);
-      a.strictEqual(testStats._aborted, false);
-      server.close();
-      resolve();
-    }).catch(function (err) {
-      console.error(err.stack);
-      server.close();
-      reject();
-    });
-
-    testStats.abort();
-  });
 });
 
 runner.test('.abort(): abort after a completed send is a no-op', function () {
@@ -109,10 +67,7 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
 
   return new Promise(function (resolve, reject) {
     testStats.send().then(function (responses) {
-      var response = responses[0];
-      a.strictEqual(response.err, undefined);
-      var queued = testStats._dequeue();
-      a.strictEqual(queued.length, 0);
+      a.strictEqual(testStats.queueLength, 0);
       a.strictEqual(testStats._aborted, false);
       testStats.abort();
       a.strictEqual(testStats._aborted, false);
@@ -121,7 +76,44 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
     }).catch(function (err) {
       console.error(err.stack);
       server.close();
-      reject();
+      reject(err);
+    });
+  });
+});
+
+runner.test('.abort(): multiple requests - throws, all requests queued', function () {
+  var http = require('http');
+  var server = http.createServer(function (req, res) {
+    setTimeout(function () {
+      res.statusCode = 200;
+      res.end('yeah?');
+    }, 1000);
+  });
+  server.listen(9010);
+
+  var testStats = new UsageStats('UA-00000000-0', {
+    dir: shared.getCacheDir(this.index, 'abort'),
+    url: 'http://localhost:9010'
+  });
+
+  for (var i = 0; i < 100; i++) {
+    testStats._enqueue(new Map([['hit', i]]));
+  }
+
+  setTimeout(testStats.abort.bind(testStats), 50);
+
+  return new Promise(function (resolve, reject) {
+    testStats.send().then(function (responses) {
+      server.close();
+      reject(new Error('should not reach here'));
+    }).catch(function (err) {
+      a.strictEqual(testStats.queueLength, 100);
+      a.strictEqual(testStats._aborted, false);
+      server.close();
+      resolve();
+    }).catch(function (err) {
+      server.close();
+      reject(err);
     });
   });
 });

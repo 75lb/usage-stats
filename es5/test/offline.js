@@ -15,7 +15,7 @@ var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 
-runner.test('.send(): failed with nothing queued - err is set', function () {
+runner.test('.send(): failed with nothing queued - throws', function () {
   var UsageTest = function (_UsageStats) {
     _inherits(UsageTest, _UsageStats);
 
@@ -37,9 +37,16 @@ runner.test('.send(): failed with nothing queued - err is set', function () {
 
   var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') });
   testStats.screenView('test');
-  return testStats.send().then(function (responses) {
-    var response = responses[0];
-    a.strictEqual(response.err.message, 'failed');
+  return new Promise(function (resolve, reject) {
+    testStats.send().then(function (responses) {
+      reject(new Error("shouldn't reach here"));
+    }).catch(function (err) {
+      if (err.message === 'failed') {
+        resolve();
+      } else {
+        reject(err);
+      }
+    });
   });
 });
 
@@ -65,10 +72,15 @@ runner.test('.send(): failed with nothing queued - hit is queued', function () {
 
   var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index, 'offline') });
   testStats.screenView('test');
-  return testStats.send().then(function (responses) {
-    var queued = testStats._dequeue();
-    a.strictEqual(queued.length, 1);
-    a.strictEqual(queued[0].get('cd'), 'test');
+  return new Promise(function (resolve, reject) {
+    testStats.send().then(function () {
+      reject(new Error('should not reach here'));
+    }).catch(function (err) {
+      var queued = testStats._dequeue();
+      a.strictEqual(queued.length, 1);
+      a.strictEqual(queued[0].get('cd'), 'test');
+      resolve();
+    }).catch(reject);
   });
 });
 
@@ -96,10 +108,15 @@ runner.test('.send(): failed with something queued - all hits queued', function 
   var hit = testStats._createHit(new Map([['one', 'test']]));
   testStats._enqueue(hit);
   testStats.screenView('test');
-  return testStats.send().then(function (responses) {
-    var queued = testStats._dequeue();
-    a.strictEqual(queued.length, 2);
-    a.strictEqual(queued[0].get('one'), 'test');
-    a.strictEqual(queued[1].get('cd'), 'test');
+  return new Promise(function (resolve, reject) {
+    testStats.send().then(function () {
+      reject(new Error('should not reach here'));
+    }).catch(function (responses) {
+      var queued = testStats._dequeue();
+      a.strictEqual(queued.length, 2);
+      a.strictEqual(queued[0].get('one'), 'test');
+      a.strictEqual(queued[1].get('cd'), 'test');
+      resolve();
+    }).catch(reject);
   });
 });

@@ -6,13 +6,13 @@ const os = require('os')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
-runner.test('.abort(): abort and queue hit', function () {
+runner.test('.abort(): aborting throws, hit queued', function () {
   const http = require('http')
   const server = http.createServer((req, res) => {
     setTimeout(() => {
       res.statusCode = 200
       res.end('yeah?')
-    }, 2000)
+    }, 1000)
   })
   server.listen(9000)
 
@@ -25,8 +25,10 @@ runner.test('.abort(): abort and queue hit', function () {
   return new Promise((resolve, reject) => {
     testStats.send()
       .then(responses => {
-        const response = responses[0]
-        a.strictEqual(response.err.name, 'aborted')
+        throw new Error('should not reach here')
+        reject()
+      })
+      .catch(err => {
         const queued = testStats._dequeue()
         a.strictEqual(queued.length, 1)
         a.strictEqual(testStats._aborted, false)
@@ -35,63 +37,18 @@ runner.test('.abort(): abort and queue hit', function () {
       })
       .catch(err => {
         server.close()
-        reject()
+        reject(err)
       })
 
-    testStats.abort()
+    setTimeout(testStats.abort.bind(testStats), 50)
   })
 })
 
-runner.test('.abort(): called before .send()', function () {
+runner.test('.abort(): called before .send() is a no-op', function () {
   const testStats = new UsageStats('UA-00000000-0')
   testStats.screenView('test')
   testStats.abort()
   a.ok(!this._aborted)
-})
-
-runner.test('.abort(): multiple requests', function () {
-  const http = require('http')
-  const server = http.createServer((req, res) => {
-    setTimeout(() => {
-      res.statusCode = 200
-      res.end('yeah?')
-    }, 2000)
-  })
-  server.listen(9010)
-
-  const testStats = new UsageStats('UA-00000000-0', {
-    dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9010'
-  })
-
-  for (let i = 0; i < 100; i++) {
-    testStats._enqueue(new Map([[ 'hit', i ]]))
-  }
-
-  return new Promise((resolve, reject) => {
-    testStats.send()
-      .then(responses => {
-        a.strictEqual(responses.length, 5)
-        a.strictEqual(responses[0].err.name, 'aborted')
-        a.strictEqual(responses[1].err.name, 'aborted')
-        a.strictEqual(responses[2].err.name, 'aborted')
-        a.strictEqual(responses[3].err.name, 'aborted')
-        a.strictEqual(responses[4].err.name, 'aborted')
-
-        const queued = testStats._dequeue()
-        a.strictEqual(queued.length, 100)
-        a.strictEqual(testStats._aborted, false)
-        server.close()
-        resolve()
-      })
-      .catch(err => {
-        console.error(err.stack)
-        server.close()
-        reject()
-      })
-
-    testStats.abort()
-  })
 })
 
 runner.test('.abort(): abort after a completed send is a no-op', function () {
@@ -113,10 +70,7 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
   return new Promise((resolve, reject) => {
     testStats.send()
       .then(responses => {
-        const response = responses[0]
-        a.strictEqual(response.err, undefined)
-        const queued = testStats._dequeue()
-        a.strictEqual(queued.length, 0)
+        a.strictEqual(testStats.queueLength, 0)
         a.strictEqual(testStats._aborted, false)
         testStats.abort()
         a.strictEqual(testStats._aborted, false)
@@ -126,7 +80,47 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
       .catch(err => {
         console.error(err.stack)
         server.close()
-        reject()
+        reject(err)
+      })
+  })
+})
+
+runner.test('.abort(): multiple requests - throws, all requests queued', function () {
+  const http = require('http')
+  const server = http.createServer((req, res) => {
+    setTimeout(() => {
+      res.statusCode = 200
+      res.end('yeah?')
+    }, 1000)
+  })
+  server.listen(9010)
+
+  const testStats = new UsageStats('UA-00000000-0', {
+    dir: shared.getCacheDir(this.index, 'abort'),
+    url: 'http://localhost:9010'
+  })
+
+  for (let i = 0; i < 100; i++) {
+    testStats._enqueue(new Map([[ 'hit', i ]]))
+  }
+
+  setTimeout(testStats.abort.bind(testStats), 50)
+
+  return new Promise((resolve, reject) => {
+    testStats.send()
+      .then(responses => {
+        server.close()
+        reject(new Error('should not reach here'))
+      })
+      .catch(err => {
+        a.strictEqual(testStats.queueLength, 100)
+        a.strictEqual(testStats._aborted, false)
+        server.close()
+        resolve()
+      })
+      .catch(err => {
+        server.close()
+        reject(err)
       })
   })
 })

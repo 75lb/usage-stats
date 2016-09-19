@@ -7,7 +7,7 @@ var shared = require('./lib/shared');
 
 var runner = new TestRunner();
 
-runner.test('.send({ debug: true }) live screenview: resolves with result, hit queued', function () {
+runner.test('.debug() live screenview: resolves with result, hit queued', function () {
   var testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
@@ -15,18 +15,19 @@ runner.test('.send({ debug: true }) live screenview: resolves with result, hit q
   });
 
   testStats.screenView(this.name);
-  return testStats.send({ debug: true }).then(function (responses) {
+  return testStats.debug().then(function (responses) {
     var response = responses[0];
-    if (response.err && response.err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
     a.strictEqual(response.hits.length, 1);
     a.strictEqual(response.hits[0].get('t'), 'screenview');
     a.strictEqual(response.result.hitParsingResult[0].valid, true);
     var queued = testStats._dequeue();
     a.strictEqual(queued.length, 0);
+  }).catch(function (err) {
+    if (err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");else throw err;
   });
 });
 
-runner.test('.send({ debug: true }) live screenview with something queued: resolves, queue correct', function () {
+runner.test('.debug() live screenview with something queued: resolves, queue correct', function () {
   var testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
@@ -35,14 +36,15 @@ runner.test('.send({ debug: true }) live screenview with something queued: resol
   var hit = testStats._createHit(new Map([['one', 'test']]));
   testStats._enqueue(hit);
   testStats.screenView(this.name);
-  return testStats.send({ debug: true }).then(function (responses) {
+  return testStats.debug().then(function (responses) {
     var response = responses[0];
-    if (response.err && response.err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
     a.strictEqual(response.hits.length, 2);
     a.strictEqual(response.hits[0].get('one'), 'test');
     a.strictEqual(response.hits[1].get('t'), 'screenview');
     a.strictEqual(response.result.hitParsingResult[1].valid, true);
     var queued = testStats._dequeue();
     a.strictEqual(queued.length, 0);
+  }).catch(function (err) {
+    if (err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");else throw err;
   });
 });
