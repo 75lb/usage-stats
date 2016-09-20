@@ -128,11 +128,10 @@ var UsageStats = function () {
     }
   }, {
     key: 'send',
-    value: function send(options) {
+    value: function send() {
       var _this = this;
 
       if (this._disabled) return Promise.resolve([]);
-      options = options || {};
 
       var toSend = this._dequeue().concat(this._hits);
       this._hits.length = 0;

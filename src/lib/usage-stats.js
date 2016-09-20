@@ -220,14 +220,11 @@ class UsageStats {
 
   /**
    * Send queued stats using as few requests as possible (typically a single request - a max of 20 events/screenviews may be sent per request). If offline, the stats will be stored and re-tried on next invocation.
-   * @param [options] {object}
-   * @param [options.debug] {boolean} - [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result.
    * @returns {Promise}
    * @fulfil `response[]` - array of responses
    */
-  send (options) {
+  send () {
     if (this._disabled) return Promise.resolve([])
-    options = options || {}
 
     let toSend = this._dequeue().concat(this._hits)
     this._hits.length = 0

@@ -96,7 +96,7 @@ const UsageStats = require('usage-stats')
         * [.event(category, action, [options])](#module_usage-stats--UsageStats+event) ⇒ <code>Map</code>
         * [.screenView(name, [options])](#module_usage-stats--UsageStats+screenView) ⇒ <code>Map</code>
         * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ⇒ <code>Map</code>
-        * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
+        * [.send()](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
         * [.debug()](#module_usage-stats--UsageStats+debug) ⇒ <code>Promise</code>
         * [.abort()](#module_usage-stats--UsageStats+abort) ↩︎
         * [.load()](#module_usage-stats--UsageStats+load) ↩︎
@@ -238,17 +238,11 @@ Track a exception. All exception hits are queued until `.send()` is called.
 
 <a name="module_usage-stats--UsageStats+send"></a>
 
-#### usageStats.send([options]) ⇒ <code>Promise</code>
+#### usageStats.send() ⇒ <code>Promise</code>
 Send queued stats using as few requests as possible (typically a single request - a max of 20 events/screenviews may be sent per request). If offline, the stats will be stored and re-tried on next invocation.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Fulfil**: `response[]` - array of responses  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [options] | <code>object</code> |  |
-| [options.debug] | <code>boolean</code> | [Validates hits](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result. |
-
 <a name="module_usage-stats--UsageStats+debug"></a>
 
 #### usageStats.debug() ⇒ <code>Promise</code>
