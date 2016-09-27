@@ -25,6 +25,7 @@ var UsageStats = function () {
     var homePath = require('home-path');
 
     this.dir = options.dir || path.resolve(homePath(), '.usage-stats');
+    this._queuePath = path.resolve(this.dir, 'queue');
     this._disabled = false;
     this._hits = [];
 
@@ -133,39 +134,33 @@ var UsageStats = function () {
 
       if (this._disabled) return Promise.resolve([]);
 
-      var toSend = this._hits.slice();
+      var toSend = this._dequeue().concat(this._hits);
       this._hits.length = 0;
 
       var reqOptions = url.parse(this._url.batch);
       reqOptions.method = 'POST';
       reqOptions.headers = { 'content-type': 'text/plain' };
 
-      if (this._aborted) {
-        return Promise.resolve();
-      } else {
-        var requests = [];
-        while (toSend.length) {
-          var batch = toSend.splice(0, 20);
-          reqOptions.controller = {};
-          this._requestControllers.push(reqOptions.controller);
-          var req = this._sendBatch(reqOptions, batch);
-          requests.push(req);
-        }
+      var requests = [];
 
-        return Promise.all(requests).then(function (results) {
-          _this._requestControllers = [];
-          if (_this._aborted) {
-            _this._aborted = false;
-          }
-          return results;
-        }).catch(function (err) {
-          _this._requestControllers = [];
-          if (_this._aborted) {
-            _this._aborted = false;
-          }
-          throw err;
-        });
+      while (toSend.length && !this._aborted) {
+        var batch = toSend.splice(0, 20);
+        reqOptions.controller = {};
+        this._requestControllers.push(reqOptions.controller);
+        var req = this._sendBatch(reqOptions, batch, true);
+        requests.push(req);
       }
+
+      return Promise.all(requests).then(function (results) {
+        _this._requestControllers = [];
+        return results;
+      }).catch(function (err) {
+        _this._requestControllers = [];
+        if (_this._aborted) {
+          _this._aborted = false;
+        }
+        throw err;
+      });
     }
   }, {
     key: 'debug',
@@ -173,7 +168,7 @@ var UsageStats = function () {
       var _this2 = this;
 
       if (this._disabled) return Promise.resolve([]);
-      var toSend = this._hits.slice();
+      var toSend = this._dequeue().concat(this._hits);
       this._hits.length = 0;
 
       var reqOptions = url.parse(this._url.debug);
@@ -200,7 +195,7 @@ var UsageStats = function () {
     }
   }, {
     key: '_sendBatch',
-    value: function _sendBatch(reqOptions, batch) {
+    value: function _sendBatch(reqOptions, batch, enqueue) {
       var _this3 = this;
 
       return this._request(reqOptions, this._createHitsPayload(batch)).then(function (response) {
@@ -210,8 +205,8 @@ var UsageStats = function () {
           return response;
         }
       }).catch(function (err) {
-        _this3._hits = _this3._hits.concat(batch);
         err.hits = batch;
+        if (enqueue) _this3._enqueue(batch);
         throw err;
       });
     }
@@ -226,6 +221,19 @@ var UsageStats = function () {
           controller.abort();
         }
       }
+      return this;
+    }
+  }, {
+    key: 'load',
+    value: function load() {
+      this._hits = this._dequeue();
+      return this;
+    }
+  }, {
+    key: 'save',
+    value: function save() {
+      this._enqueue(this._hits);
+      this._hits.length = 0;
       return this;
     }
   }, {
@@ -275,6 +283,43 @@ var UsageStats = function () {
       return request(reqOptions, data);
     }
   }, {
+    key: '_dequeue',
+    value: function _dequeue(count) {
+      try {
+        var queue = fs.readFileSync(this._queuePath, 'utf8');
+        var hits = void 0;
+        try {
+          hits = u.jsonToHits(queue);
+        } catch (err) {
+          hits = [];
+        }
+        var output = [];
+        if (count) {
+          output = hits.splice(0, count);
+          fs.writeFileSync(this._queuePath, u.hitsToJson(hits));
+        } else {
+          fs.writeFileSync(this._queuePath, '');
+          output = hits;
+        }
+        return output;
+      } catch (err) {
+        if (err.code === 'ENOENT') {
+          return [];
+        } else {
+          throw err;
+        }
+      }
+    }
+  }, {
+    key: '_enqueue',
+    value: function _enqueue(hits) {
+      hits = arrayify(hits);
+      if (hits.length) {
+        fs.appendFileSync(this._queuePath, u.hitsToJson(hits));
+      }
+      return this;
+    }
+  }, {
     key: '_getScreenResolution',
     value: function _getScreenResolution() {
       return process.stdout.columns && process.stdout.rows ? process.stdout.columns + 'x' + process.stdout.rows : 'N/A';
@@ -301,6 +346,20 @@ var UsageStats = function () {
       this._dir = val;
       var mkdirp = require('mkdirp');
       mkdirp.sync(this._dir);
+    }
+  }, {
+    key: 'queueLength',
+    get: function get() {
+      var hits = [];
+      try {
+        var queue = fs.readFileSync(this._queuePath, 'utf8');
+        hits = queue.trim().split(os.EOL);
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          throw err;
+        }
+      }
+      return hits.length;
     }
   }]);
 

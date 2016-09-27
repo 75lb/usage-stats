@@ -108,7 +108,7 @@ runner.test('.event(category, action): no optionals, creates hit', function () {
 });
 
 runner.test('.event(category, action): with optionals, creates hit', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
   var hit = testStats.event('test-category', 'test-action', {
     label: 'label',
     value: 'value'
@@ -121,7 +121,7 @@ runner.test('.event(category, action): with optionals, creates hit', function ()
 });
 
 runner.test('.event(options, hitParams): creates hit and applies hit params', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
   var hit = testStats.event('test-category', 'test-action', {
     hitParams: new Map([['cd1', 'cd1'], ['cd2', 'cd2']])
   });
@@ -130,58 +130,6 @@ runner.test('.event(options, hitParams): creates hit and applies hit params', fu
   a.strictEqual(hit.get('ea'), 'test-action');
   a.strictEqual(hit.get('cd1'), 'cd1');
   a.strictEqual(hit.get('cd2'), 'cd2');
-});
-
-runner.test('._enqueue(hits): writes hits to cacheDir', function () {
-  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
-  var hit1 = new Map([['hit', 1]]);
-  var hit2 = new Map([['hit', 2]]);
-  var hit3 = new Map([['hit', 3]]);
-  testStats._enqueue([hit1, hit2]);
-  testStats._enqueue(hit3);
-  var queue = fs.readFileSync(testStats._queuePath, 'utf8');
-  a.strictEqual(queue, '[["hit",1]]\n[["hit",2]]\n[["hit",3]]\n');
-});
-
-runner.skip('._enqueue(): remove session control from queued hits', function () {
-  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
-  var hit1 = new Map([['hit', 1], ['sc', 'start']]);
-  testStats._enqueue(hit1);
-  var queue = fs.readFileSync(testStats._queuePath, 'utf8');
-  a.strictEqual(queue, '[["hit",1]]\n');
-  var hit2 = new Map([['hit', 2], ['cd1', 'test']]);
-  testStats._enqueue(hit2);
-  queue = fs.readFileSync(testStats._queuePath, 'utf8');
-  a.strictEqual(queue, '[["hit",1]]\n[["hit",2],["cd1","test"]]\n');
-});
-
-runner.test('._dequeue(count): removes and returns hits', function () {
-  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
-  var hit1 = new Map([['hit', 1]]);
-  var hit2 = new Map([['hit', 2]]);
-  var hit3 = new Map([['hit', 3]]);
-  var hit4 = new Map([['hit', 4]]);
-  testStats._enqueue([hit1, hit2, hit3, hit4]);
-
-  var queue = testStats._dequeue(2);
-  a.deepEqual(queue, [hit1, hit2]);
-  queue = testStats._dequeue(1);
-  a.deepEqual(queue, [hit3]);
-  queue = testStats._dequeue(2);
-  a.deepEqual(queue, [hit4]);
-  queue = testStats._dequeue(2);
-  a.deepEqual(queue, []);
-});
-
-runner.test('._dequeue(): handles garbage on the queue', function () {
-  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
-  fs.writeFileSync(testStats._queuePath, 'blah');
-
-  var queue = void 0;
-  a.doesNotThrow(function () {
-    return queue = testStats._dequeue();
-  });
-  a.deepEqual(queue, []);
 });
 
 runner.test('._createHitsPayload(hits): returns correct form data', function () {
@@ -203,15 +151,18 @@ runner.test('.exception(msg, isFatal)', function () {
   a.strictEqual(hit.get('exf'), 1);
 });
 
-runner.test('exception hitParams', function () {});
+runner.test('exception hitParams', function () {
+  var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
+  var hit = testStats.exception('test error', 1, {
+    hitParams: new Map([['cd1', 'cd1'], ['cd2', 'cd2']])
+  });
+  a.strictEqual(testStats._hits.length, 1);
+  a.strictEqual(hit.get('cd1'), 'cd1');
+  a.strictEqual(hit.get('cd2'), 'cd2');
+});
 
-runner.test('.defaults: extra params', function () {});
-
-runner.test('methods taking maps as input also accept objects or map constructor data', function () {});
-
-runner.test('_getOSVersion(): only cache for 24 hours', function () {});
-
-runner.test('.enable()', function () {});
-runner.test('.disable()', function () {});
-
-runner.test('.event(): as the first hit of a session - marked sc=start', function () {});
+runner.test('.defaults: extra params');
+runner.test('methods taking maps as input also accept objects or map constructor data');
+runner.test('_getOSVersion(): only cache for 24 hours');
+runner.test('.enable()');
+runner.test('.disable()');

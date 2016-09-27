@@ -6,5 +6,4 @@ const os = require('os')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
-runner.test('load test: send a batch of 100 hits', function () {
-})
+runner.test('load test: send a batch of 100 hits')

@@ -7,4 +7,4 @@ var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 
-runner.test('load test: send a batch of 100 hits', function () {});
+runner.test('load test: send a batch of 100 hits');

@@ -45,6 +45,7 @@ class UsageStats {
      * @type {string}
      */
     this.dir = options.dir || path.resolve(homePath(), '.usage-stats')
+    this._queuePath = path.resolve(this.dir, 'queue')
     this._disabled = false
     this._hits = []
 
@@ -226,41 +227,35 @@ class UsageStats {
   send () {
     if (this._disabled) return Promise.resolve([])
 
-    let toSend = this._hits.slice()
+    let toSend = this._dequeue().concat(this._hits)
     this._hits.length = 0
 
     const reqOptions = url.parse(this._url.batch)
     reqOptions.method = 'POST'
     reqOptions.headers = { 'content-type': 'text/plain' }
 
-    if (this._aborted) {
-      return Promise.resolve()
-    } else {
-      const requests = []
-      while (toSend.length) {
-        let batch = toSend.splice(0, 20)
-        reqOptions.controller = {}
-        this._requestControllers.push(reqOptions.controller)
-        const req = this._sendBatch(reqOptions, batch)
-        requests.push(req)
-      }
+    const requests = []
 
-      return Promise.all(requests)
-        .then(results => {
-          this._requestControllers = []
-          if (this._aborted) {
-            this._aborted = false
-          }
-          return results
-        })
-        .catch(err => {
-          this._requestControllers = []
-          if (this._aborted) {
-            this._aborted = false
-          }
-          throw err
-        })
+    while (toSend.length && !this._aborted) {
+      let batch = toSend.splice(0, 20)
+      reqOptions.controller = {}
+      this._requestControllers.push(reqOptions.controller)
+      const req = this._sendBatch(reqOptions, batch, true)
+      requests.push(req)
     }
+
+    return Promise.all(requests)
+      .then(results => {
+        this._requestControllers = []
+        return results
+      })
+      .catch(err => {
+        this._requestControllers = []
+        if (this._aborted) {
+          this._aborted = false
+        }
+        throw err
+      })
   }
 
   /**
@@ -271,7 +266,7 @@ class UsageStats {
    */
   debug () {
     if (this._disabled) return Promise.resolve([])
-    let toSend = this._hits.slice()
+    let toSend = this._dequeue().concat(this._hits)
     this._hits.length = 0
 
     const reqOptions = url.parse(this._url.debug)
@@ -293,7 +288,7 @@ class UsageStats {
     return Promise.all(requests)
   }
 
-  _sendBatch (reqOptions, batch) {
+  _sendBatch (reqOptions, batch, enqueue) {
     return this._request(reqOptions, this._createHitsPayload(batch))
       .then(response => {
         if (response.res.statusCode >= 300) {
@@ -303,8 +298,8 @@ class UsageStats {
         }
       })
       .catch(err => {
-        this._hits = this._hits.concat(batch)
         err.hits = batch
+        if (enqueue) this._enqueue(batch)
         throw err
       })
   }
@@ -323,6 +318,42 @@ class UsageStats {
       }
     }
     return this
+  }
+
+  /**
+   * Loads queued hits.
+   * @chainable
+   */
+  load () {
+    this._hits = this._dequeue()
+    return this
+  }
+
+  /**
+   * Dumps unsent hits to the queue. They will be dequeued and sent on the next invocation of `.send()`.
+   * @chainable
+   */
+  save () {
+    this._enqueue(this._hits)
+    this._hits.length = 0
+    return this
+  }
+
+  /**
+   * Return the total hits stored on the queue.
+   * @returns {number}
+   */
+  get queueLength () {
+    let hits = []
+    try {
+      const queue = fs.readFileSync(this._queuePath, 'utf8')
+      hits = queue.trim().split(os.EOL)
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        throw err
+      }
+    }
+    return hits.length
   }
 
   /**
@@ -383,6 +414,56 @@ class UsageStats {
   _request (reqOptions, data) {
     const request = require('req-then')
     return request(reqOptions, data)
+  }
+
+  /**
+   * Returns hits queued.
+   * @param [count] {number} - Number of hits to dequeue. Defaults to "all hits".
+   * @return {map[]}
+   * @private
+   * @sync
+   */
+  _dequeue (count) {
+    try {
+      const queue = fs.readFileSync(this._queuePath, 'utf8')
+      let hits
+      try {
+        hits = u.jsonToHits(queue)
+      } catch (err) {
+        hits = []
+      }
+      let output = []
+      if (count) {
+        output = hits.splice(0, count)
+        fs.writeFileSync(this._queuePath, u.hitsToJson(hits))
+      } else {
+        fs.writeFileSync(this._queuePath, '')
+        output = hits
+      }
+      return output
+    } catch (err) {
+      /* queue file doesn't exist */
+      if (err.code === 'ENOENT') {
+        return []
+      } else {
+        throw err
+      }
+    }
+  }
+
+  /**
+   * Append an array of hits to the queue.
+   * @param {string[]} - Array of hits.
+   * @private
+   * @sync
+   * @chainable
+   */
+  _enqueue (hits) {
+    hits = arrayify(hits)
+    if (hits.length) {
+      fs.appendFileSync(this._queuePath, u.hitsToJson(hits))
+    }
+    return this;
   }
 
   _getScreenResolution () {

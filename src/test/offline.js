@@ -6,6 +6,57 @@ const os = require('os')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
+runner.test('._enqueue(hits): writes hits to cacheDir', function () {
+  const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  const hit1 = new Map([[ 'hit', 1 ]])
+  const hit2 = new Map([[ 'hit', 2 ]])
+  const hit3 = new Map([[ 'hit', 3 ]])
+  testStats._enqueue([ hit1, hit2 ])
+  testStats._enqueue(hit3)
+  const queue = fs.readFileSync(testStats._queuePath, 'utf8')
+  a.strictEqual(queue, '[["hit",1]]\n[["hit",2]]\n[["hit",3]]\n')
+})
+
+/* REMOVE SESSION CONTROL ON ABORT, BUT NOT ON REGULAR BEHAVIOUR.. MAYBE. */
+runner.skip('._enqueue(): remove session control from queued hits', function () {
+  const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  const hit1 = new Map([[ 'hit', 1 ], [ 'sc', 'start' ]])
+  testStats._enqueue(hit1)
+  let queue = fs.readFileSync(testStats._queuePath, 'utf8')
+  a.strictEqual(queue, '[["hit",1]]\n')
+  const hit2 = new Map([[ 'hit', 2 ], [ 'cd1', 'test' ]])
+  testStats._enqueue(hit2)
+  queue = fs.readFileSync(testStats._queuePath, 'utf8')
+  a.strictEqual(queue, '[["hit",1]]\n[["hit",2],["cd1","test"]]\n')
+})
+
+runner.test('._dequeue(count): removes and returns hits', function () {
+  const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  const hit1 = new Map([[ 'hit', 1 ]])
+  const hit2 = new Map([[ 'hit', 2 ]])
+  const hit3 = new Map([[ 'hit', 3 ]])
+  const hit4 = new Map([[ 'hit', 4 ]])
+  testStats._enqueue([ hit1, hit2, hit3, hit4 ])
+
+  let queue = testStats._dequeue(2)
+  a.deepEqual(queue, [ hit1, hit2 ])
+  queue = testStats._dequeue(1)
+  a.deepEqual(queue, [ hit3 ])
+  queue = testStats._dequeue(2)
+  a.deepEqual(queue, [ hit4 ])
+  queue = testStats._dequeue(2)
+  a.deepEqual(queue, [])
+})
+
+runner.test('._dequeue(): handles garbage on the queue', function () {
+  const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  fs.writeFileSync(testStats._queuePath, 'blah')
+
+  let queue
+  a.doesNotThrow(() => queue = testStats._dequeue())
+  a.deepEqual(queue, [])
+})
+
 runner.test('.send(): failed with nothing queued - throws', function () {
   class UsageTest extends UsageStats {
     _request () {

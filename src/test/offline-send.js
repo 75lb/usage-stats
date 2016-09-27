@@ -6,21 +6,6 @@ const os = require('os')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
-runner.test('.send(): screenview (live)', function () {
-  const testStats = new UsageStats('UA-70853320-4', {
-    name: 'usage-stats',
-    version: require('../../package').version,
-    dir: shared.getCacheDir(this.index)
-  })
-
-  testStats.screenView(this.name)
-  return testStats.send()
-    .then(responses => {
-      if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test")
-      return responses.map(response => response.res.statusCode)
-    })
-})
-
 runner.test('.send(): successful with nothing queued - still nothing queued', function () {
   class UsageTest extends UsageStats {
     _request (reqOptions, data) {

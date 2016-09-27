@@ -15,22 +15,6 @@ var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 
-runner.test('.send(): screenview (live)', function () {
-  var testStats = new UsageStats('UA-70853320-4', {
-    name: 'usage-stats',
-    version: require('../../package').version,
-    dir: shared.getCacheDir(this.index)
-  });
-
-  testStats.screenView(this.name);
-  return testStats.send().then(function (responses) {
-    if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
-    return responses.map(function (response) {
-      return response.res.statusCode;
-    });
-  });
-});
-
 runner.test('.send(): successful with nothing queued - still nothing queued', function () {
   var UsageTest = function (_UsageStats) {
     _inherits(UsageTest, _UsageStats);
