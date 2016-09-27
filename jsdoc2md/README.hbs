@@ -66,15 +66,12 @@ See [here](https://developers.google.com/analytics/devguides/collection/protocol
 
 ### Sent by default
 
+All parameters are send on demand, beside this list. 
+
 * Operating System version (sent in the UserAgent)
 * [Client ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#cid) (a random UUID, generated once per OS user and stored)
 * [Language](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ul) (`process.env.LANG`, if set)
 * [Screen resolution](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sr) (terminal rows by columns, by default)
-
-### Sent on demand
-
-* [App name](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#an)
-* [App version](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#av)
 
 ## API Reference
 
