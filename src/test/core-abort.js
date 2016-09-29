@@ -1,6 +1,6 @@
 'use strict'
 const TestRunner = require('test-runner')
-const UsageStats = require('../../')
+const UsageStats = require('../lib/usage-stats-abortable')
 const a = require('core-assert')
 const os = require('os')
 const runner = new TestRunner()
@@ -34,7 +34,6 @@ runner.test('.abort(): aborting throws', function () {
         reject()
       })
       .catch(err => {
-        a.strictEqual(testStats._aborted, false)
         server.close()
         resolve()
       })
@@ -51,7 +50,6 @@ runner.test('.abort(): called before .send() is a no-op', function () {
   const testStats = new UsageStats('UA-00000000-0')
   testStats.screenView('test')
   testStats.abort()
-  a.ok(!this._aborted)
 })
 
 runner.test('.abort(): abort after a completed send is a no-op', function () {
@@ -66,9 +64,7 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
   return new Promise((resolve, reject) => {
     testStats.send()
       .then(responses => {
-        a.strictEqual(testStats._aborted, false)
         testStats.abort()
-        a.strictEqual(testStats._aborted, false)
         server.close()
         resolve()
       })
@@ -104,13 +100,33 @@ runner.test('.abort(): multiple requests - throws', function () {
       })
       .catch(err => {
         a.strictEqual(testStats._hits.length, 100)
-        a.strictEqual(testStats._aborted, false)
         server.close()
         resolve()
       })
       .catch(err => {
         server.close()
         reject(err)
+      })
+  })
+})
+
+runner.test('.send({ timeout }): should abort after timeout period', function () {
+  const server = getServer(9030, 1000)
+  const testStats = new UsageStats('UA-00000000-0', {
+    dir: shared.getCacheDir(this.index, 'abort'),
+    url: 'http://localhost:9010'
+  })
+
+  testStats.exception('test error', 1)
+  return new Promise((resolve, reject) => {
+    testStats.send({ timeout: 100 })
+      .then(() => {
+        server.close()
+        reject()
+      })
+      .catch(err => {
+        server.close()
+        resolve()
       })
   })
 })

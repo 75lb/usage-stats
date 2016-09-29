@@ -24,10 +24,11 @@ runner.test('.send(): screenview (live)', function () {
 
   testStats.screenView(this.name);
   return testStats.send().then(function (responses) {
-    if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
     return responses.map(function (response) {
       return response.res.statusCode;
     });
+  }).catch(function (err) {
+    if (err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
   });
 });
 

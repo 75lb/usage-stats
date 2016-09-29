@@ -16,8 +16,10 @@ runner.test('.send(): screenview (live)', function () {
   testStats.screenView(this.name)
   return testStats.send()
     .then(responses => {
-      if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test")
       return responses.map(response => response.res.statusCode)
+    })
+    .catch(err => {
+      if (err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test")
     })
 })
 

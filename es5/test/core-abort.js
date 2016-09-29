@@ -1,7 +1,7 @@
 'use strict';
 
 var TestRunner = require('test-runner');
-var UsageStats = require('../../');
+var UsageStats = require('../lib/usage-stats-abortable');
 var a = require('core-assert');
 var os = require('os');
 var runner = new TestRunner();
@@ -33,7 +33,6 @@ runner.test('.abort(): aborting throws', function () {
       throw new Error('should not reach here');
       reject();
     }).catch(function (err) {
-      a.strictEqual(testStats._aborted, false);
       server.close();
       resolve();
     }).catch(function (err) {
@@ -49,7 +48,6 @@ runner.test('.abort(): called before .send() is a no-op', function () {
   var testStats = new UsageStats('UA-00000000-0');
   testStats.screenView('test');
   testStats.abort();
-  a.ok(!this._aborted);
 });
 
 runner.test('.abort(): abort after a completed send is a no-op', function () {
@@ -63,9 +61,7 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
 
   return new Promise(function (resolve, reject) {
     testStats.send().then(function (responses) {
-      a.strictEqual(testStats._aborted, false);
       testStats.abort();
-      a.strictEqual(testStats._aborted, false);
       server.close();
       resolve();
     }).catch(function (err) {
@@ -98,12 +94,30 @@ runner.test('.abort(): multiple requests - throws', function () {
       reject(new Error('should not reach here'));
     }).catch(function (err) {
       a.strictEqual(testStats._hits.length, 100);
-      a.strictEqual(testStats._aborted, false);
       server.close();
       resolve();
     }).catch(function (err) {
       server.close();
       reject(err);
+    });
+  });
+});
+
+runner.test('.send({ timeout }): should abort after timeout period', function () {
+  var server = getServer(9030, 1000);
+  var testStats = new UsageStats('UA-00000000-0', {
+    dir: shared.getCacheDir(this.index, 'abort'),
+    url: 'http://localhost:9010'
+  });
+
+  testStats.exception('test error', 1);
+  return new Promise(function (resolve, reject) {
+    testStats.send({ timeout: 100 }).then(function () {
+      server.close();
+      reject();
+    }).catch(function (err) {
+      server.close();
+      resolve();
     });
   });
 });
