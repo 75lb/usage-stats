@@ -1,7 +1,7 @@
 'use strict';
 
 var TestRunner = require('test-runner');
-var UsageStats = require('../lib/usage-stats-abortable');
+var UsageStats = require('../../');
 var a = require('core-assert');
 var os = require('os');
 var runner = new TestRunner();
