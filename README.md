@@ -99,8 +99,8 @@ All parameters are send on demand, beside this list.
 | --- | --- | --- |
 | trackingId | <code>string</code> | Google Analytics tracking ID (required). |
 | [options] | <code>object</code> |  |
-| [options.name] | <code>string</code> | App name |
-| [options.version] | <code>string</code> | App version |
+| [options.an] | <code>string</code> | App name |
+| [options.av] | <code>string</code> | App version |
 | [options.lang] | <code>string</code> | Language. Defaults to `process.env.LANG`. |
 | [options.sr] | <code>string</code> | Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`. |
 | [options.ua] | <code>string</code> | User Agent string to use. |
@@ -185,8 +185,8 @@ Track an event. All event hits are queued until `.send()` is called.
 | category | <code>string</code> | Event category (required). |
 | action | <code>string</code> | Event action (required). |
 | [options] | <code>option</code> |  |
-| [options.label] | <code>string</code> | Event label |
-| [options.value] | <code>string</code> | Event value |
+| [options.el] | <code>string</code> | Event label |
+| [options.ev] | <code>string</code> | Event value |
 | [options.hitParams] | <code>Array.&lt;map&gt;</code> | One or more additional params to send with the hit. |
 
 <a name="module_usage-stats--UsageStats+screenView"></a>

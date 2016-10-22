@@ -19,6 +19,7 @@ var os = require('os');
 var fs = require('fs');
 var arrayify = require('array-back');
 var u = require('./util');
+var t = require('typical');
 
 var UsageStats = function () {
   function UsageStats(trackingId, options) {
@@ -39,8 +40,8 @@ var UsageStats = function () {
     };
 
     this.defaults = new Map([['v', 1], ['tid', trackingId], ['ds', 'app'], ['cid', this._getClientId()], ['ua', options.ua || 'Mozilla/5.0 ' + this._getOSVersion()], ['ul', options.lang || process.env.LANG], ['sr', options.sr || this._getScreenResolution()]]);
-    if (options.name) this.defaults.set('an', options.name);
-    if (options.version) this.defaults.set('av', options.version);
+    if (options.an) this.defaults.set('an', options.an);
+    if (options.av) this.defaults.set('av', options.av);
   }
 
   _createClass(UsageStats, [{
@@ -97,14 +98,17 @@ var UsageStats = function () {
     key: 'event',
     value: function event(category, action, options) {
       if (this._disabled) return this;
-      options = options || {};
       if (!(category && action)) throw new Error('category and action required');
+      options = options || {};
+      if (options.hitParams && t.isPlainObject(options.hitParams)) {
+        options.hitParams = objToMap(options.hitParams);
+      }
 
       var hit = this._createHit(new Map([['t', 'event'], ['ec', category], ['ea', action]]), options);
 
       var t = require('typical');
-      if (t.isDefined(options.label)) hit.set('el', options.label);
-      if (t.isDefined(options.value)) hit.set('ev', options.value);
+      if (t.isDefined(options.el)) hit.set('el', options.el);
+      if (t.isDefined(options.ev)) hit.set('ev', options.ev);
       this._hits.push(hit);
       return hit;
     }
@@ -113,9 +117,13 @@ var UsageStats = function () {
     value: function screenView(name, options) {
       if (this._disabled) return this;
       options = options || {};
-      if (options.hitParams && !(options.hitParams instanceof Map)) throw new Error('map instance required');
+      if (options.hitParams && t.isPlainObject(options.hitParams)) {
+        options.hitParams = objToMap(options.hitParams);
+      }
 
       var hit = this._createHit(new Map([['t', 'screenview'], ['cd', name]]), options);
+      if (!hit.has('an')) throw new Error("'an' parameter required (App name)");
+      if (!hit.has('cd')) throw new Error("'cd' parameter required (screen name)");
       this._hits.push(hit);
       return hit;
     }
@@ -353,5 +361,13 @@ var UsageStatsAbortable = function (_UsageStats) {
 
   return UsageStatsAbortable;
 }(UsageStats);
+
+function objToMap(obj) {
+  var map = new Map();
+  Object.keys(obj).forEach(function (key) {
+    return map.set(key, obj[key]);
+  });
+  return map;
+}
 
 module.exports = UsageStatsAbortable;

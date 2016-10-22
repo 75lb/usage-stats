@@ -4,6 +4,7 @@ const os = require('os')
 const fs = require('fs')
 const arrayify = require('array-back')
 const u = require('./util')
+const t = require('typical')
 
 /**
  * @module usage-stats
@@ -19,8 +20,8 @@ class UsageStats {
   /**
    * @param {string} - Google Analytics tracking ID (required).
    * @param [options] {object}
-   * @param [options.name] {string} - App name
-   * @param [options.version] {string} - App version
+   * @param [options.an] {string} - App name
+   * @param [options.av] {string} - App version
    * @param [options.lang] {string} - Language. Defaults to `process.env.LANG`.
    * @param [options.sr] {string} - Screen resolution. Defaults to `${process.stdout.rows}x${process.stdout.columns}`.
    * @param [options.ua] {string} - User Agent string to use.
@@ -71,8 +72,8 @@ class UsageStats {
       [ 'ul', options.lang || process.env.LANG ],
       [ 'sr', options.sr || this._getScreenResolution() ]
     ])
-    if (options.name) this.defaults.set('an', options.name)
-    if (options.version) this.defaults.set('av', options.version)
+    if (options.an) this.defaults.set('an', options.an)
+    if (options.av) this.defaults.set('av', options.av)
   }
 
   get dir () {
@@ -152,15 +153,18 @@ class UsageStats {
    * @param {string} - Event category (required).
    * @param {string} - Event action (required).
    * @param [options] {option}
-   * @param [options.label] {string} - Event label
-   * @param [options.value] {string} - Event value
+   * @param [options.el] {string} - Event label
+   * @param [options.ev] {string} - Event value
    * @param [options.hitParams] {map[]} - One or more additional params to send with the hit.
    * @returns {Map}
    */
   event (category, action, options) {
     if (this._disabled) return this
-    options = options || {}
     if (!(category && action)) throw new Error('category and action required')
+    options = options || {}
+    if (options.hitParams && t.isPlainObject(options.hitParams)) {
+      options.hitParams = objToMap(options.hitParams)
+    }
 
     let hit = this._createHit(new Map([
       [ 't', 'event' ],
@@ -169,8 +173,8 @@ class UsageStats {
     ]), options)
 
     const t = require('typical')
-    if (t.isDefined(options.label)) hit.set('el', options.label)
-    if (t.isDefined(options.value)) hit.set('ev', options.value)
+    if (t.isDefined(options.el)) hit.set('el', options.el)
+    if (t.isDefined(options.ev)) hit.set('ev', options.ev)
     this._hits.push(hit)
     return hit
   }
@@ -185,12 +189,16 @@ class UsageStats {
   screenView (name, options) {
     if (this._disabled) return this
     options = options || {}
-    if (options.hitParams && !(options.hitParams instanceof Map)) throw new Error('map instance required')
+    if (options.hitParams && t.isPlainObject(options.hitParams)) {
+      options.hitParams = objToMap(options.hitParams)
+    }
 
     let hit = this._createHit(new Map([
       [ 't', 'screenview' ],
       [ 'cd', name ],
     ]), options)
+    if (!hit.has('an')) throw new Error("'an' parameter required (App name)")
+    if (!hit.has('cd')) throw new Error("'cd' parameter required (screen name)")
     this._hits.push(hit)
     return hit
   }
@@ -430,6 +438,12 @@ class UsageStatsAbortable extends UsageStats {
     }
     return this
   }
+}
+
+function objToMap(obj) {
+  let map = new Map()
+  Object.keys(obj).forEach(key => map.set(key, obj[key]))
+  return map
 }
 
 module.exports = UsageStatsAbortable
