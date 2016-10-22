@@ -2,7 +2,6 @@
 const TestRunner = require('test-runner')
 const UsageStats = require('../../')
 const a = require('core-assert')
-const fs = require('fs')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
@@ -137,8 +136,8 @@ runner.test('.event(options, hitParams): creates hit and applies hit params', fu
 runner.test('._createHitsPayload(hits): returns correct form data', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
   const hit1 = new Map([ [ 'hit', 1 ] ])
-  const hit2 = new Map([ [ 'hit', 2 ], [ 'ua', 'test'] ])
-  const hit3 = new Map([ [ 'hit', 3 ], [ 'cd1', 'cd1'], [ 'ua', 'ua'] ])
+  const hit2 = new Map([ [ 'hit', 2 ], [ 'ua', 'test' ] ])
+  const hit3 = new Map([ [ 'hit', 3 ], [ 'cd1', 'cd1' ], [ 'ua', 'ua' ] ])
   const hits = [ hit1, hit2, hit3 ]
   const result = testStats._createHitsPayload(hits)
   a.strictEqual(result, 'hit=1\nhit=2&ua=test\nhit=3&cd1=cd1&ua=ua')

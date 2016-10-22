@@ -11,7 +11,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var TestRunner = require('test-runner');
 var UsageStats = require('../../');
 var a = require('core-assert');
-var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 

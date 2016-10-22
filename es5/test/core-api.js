@@ -3,7 +3,6 @@
 var TestRunner = require('test-runner');
 var UsageStats = require('../../');
 var a = require('core-assert');
-var fs = require('fs');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 

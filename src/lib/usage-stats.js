@@ -216,6 +216,8 @@ class UsageStats {
 
   /**
    * Send queued stats using as few requests as possible (typically a single request - a max of 20 events/screenviews may be sent per request). If offline, the stats will be stored and re-tried on next invocation.
+   * @param [options] {object}
+   * @param [options.timeout] {number}
    * @returns {Promise}
    * @fulfil {response[]} - array of responses. Each response has `data` and the original node `res`.
    * @reject {Error} - Rejects with the first error encountered. The error is a standard node http error with a `name` of `request-fail` and a `hits` property showing what failed to send.
@@ -363,22 +365,20 @@ class UsageStats {
       })
       .join(os.EOL)
   }
+
+  /**
+   * Aborts the in-progress .send() operation, queuing any unsent hits.
+   * @chainable
+   */
+   abort () {}
 }
 
-/**
- * @extends module:usage-stats
- * @typicalname usage
- */
 class UsageStatsAbortable extends UsageStats {
   constructor (trackingId, options) {
     super(trackingId, options)
     this._requestControllers = []
   }
 
-  /**
-   * @param [options] {object}
-   * @param [options.timeout] {number}
-   */
   send (options) {
     options = options || {}
     let sendPromise
