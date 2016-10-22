@@ -265,6 +265,9 @@ var UsageStats = function () {
       }).join(os.EOL);
     }
   }, {
+    key: 'abort',
+    value: function abort() {}
+  }, {
     key: 'dir',
     get: function get() {
       return this._dir;
