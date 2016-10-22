@@ -9,6 +9,10 @@ if (!detect.newArrayFeatures()) {
   require('core-js/es6/array')
 }
 
+if (!detect.promises()) {
+  require('core-js/es6/promise')
+}
+
 if (detect.all('class', 'arrowFunction', 'let', 'const', 'spread', 'destructuring')) {
   module.exports = require('./src/lib/usage-stats')
 } else {
