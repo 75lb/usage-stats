@@ -4,6 +4,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var t = require('typical');
+
 var Command = function () {
   function Command() {
     _classCallCheck(this, Command);
@@ -20,12 +22,18 @@ var Command = function () {
       return [{ header: 'Options', optionList: this.optionDefinitions() }];
     }
   }, {
-    key: 'getData',
-    value: function getData(options) {}
+    key: 'execute',
+    value: function execute() {
+      throw new Error('not implemented');
+    }
   }, {
     key: 'cliView',
     value: function cliView(data) {
-      return JSON.stringify(data, null, '  ');
+      if (t.isString(data)) {
+        return data;
+      } else {
+        return require('util').inspect(data, { depth: 13, colors: true });
+      }
     }
   }]);
 

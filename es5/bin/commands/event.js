@@ -35,9 +35,8 @@ var Event = function (_Command) {
       return sections;
     }
   }, {
-    key: 'getData',
-    value: function getData(options) {
-      _get(Event.prototype.__proto__ || Object.getPrototypeOf(Event.prototype), 'getData', this).call(this, options);
+    key: 'execute',
+    value: function execute(options) {
       options = options || {};
       var usage = new UsageStats(options.tid, options);
       var hit = usage.event(options.ec, options.ea, options);

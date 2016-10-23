@@ -16,8 +16,7 @@ class Event extends Command {
     sections.unshift({ header: 'event', content: 'Track an event.' })
     return sections
   }
-  getData (options) {
-    super.getData(options)
+  execute (options) {
     options = options || {}
     const usage = new UsageStats(options.tid, options)
     const hit = usage.event(options.ec, options.ea, options)

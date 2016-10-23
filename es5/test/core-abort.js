@@ -23,7 +23,8 @@ runner.test('.abort(): aborting throws', function () {
 
   var testStats = new UsageStats('UA-00000000-0', {
     dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9000'
+    url: 'http://localhost:9000',
+    an: 'testsuite'
   });
   testStats.screenView('test');
 
@@ -43,7 +44,7 @@ runner.test('.abort(): aborting throws', function () {
 });
 
 runner.test('.abort(): called before .send() is a no-op', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   testStats.screenView('test');
   testStats.abort();
 });
@@ -53,7 +54,8 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
 
   var testStats = new UsageStats('UA-00000000-0', {
     dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9020'
+    url: 'http://localhost:9020',
+    an: 'testsuite'
   });
   testStats.screenView('test');
 
@@ -75,7 +77,8 @@ runner.test('.abort(): multiple requests - throws', function () {
 
   var testStats = new UsageStats('UA-00000000-0', {
     dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9010'
+    url: 'http://localhost:9010',
+    an: 'testsuite'
   });
 
   for (var i = 0; i < 100; i++) {
@@ -105,7 +108,8 @@ runner.test('.send({ timeout }): should abort after timeout period', function ()
   var server = getServer(9030, 1000);
   var testStats = new UsageStats('UA-00000000-0', {
     dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9010'
+    url: 'http://localhost:9010',
+    an: 'testsuite'
   });
 
   testStats.exception('test error', 1);

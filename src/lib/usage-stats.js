@@ -172,7 +172,6 @@ class UsageStats {
       [ 'ea', action ]
     ]), options)
 
-    const t = require('typical')
     if (t.isDefined(options.el)) hit.set('el', options.el)
     if (t.isDefined(options.ev)) hit.set('ev', options.ev)
     this._hits.push(hit)

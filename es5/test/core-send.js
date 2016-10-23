@@ -18,7 +18,8 @@ runner.test('.send(): screenview (live)', function () {
   var testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: shared.getCacheDir(this.index)
+    dir: shared.getCacheDir(this.index),
+    an: 'testsuite'
   });
 
   testStats.screenView(this.name);
@@ -54,7 +55,8 @@ runner.test('.send(): offline throws', function () {
   var testStats = new OfflineUsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: shared.getCacheDir(this.index)
+    dir: shared.getCacheDir(this.index),
+    an: 'testsuite'
   });
 
   testStats.screenView(this.name);

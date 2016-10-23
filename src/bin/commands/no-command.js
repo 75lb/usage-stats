@@ -15,16 +15,25 @@ class NoCommand extends Command {
   }
   usage () {
     return [
-      { header: 'usage-stats'},
       {
-        header: 'Options',
+        header: 'usage-stats',
+        content: 'A minimal, offline-friendly Google Analytics Measurement Protocol client for tracking usage statistics in shell and javascript applications.'
+      },
+      {
+        header: 'Synopsis',
+        content: [
+          '$ usage-stats <command> <command-options>'
+        ]
+      },
+      {
+        header: 'Commands',
         content: this.commandList
           .filter(c => c.name !== null )
           .map(c => ({ name: c.name, desc: c.desc }))
       }
     ]
   }
-  getData (options) {
+  execute (options) {
     return Promise.resolve(commandLineUsage(this.usage()))
   }
 }

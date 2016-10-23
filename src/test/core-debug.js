@@ -9,7 +9,8 @@ runner.test('.debug() live screenview: resolves with result', function () {
   const testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
     version: require('../../package').version,
-    dir: shared.getCacheDir(this.index, 'debug')
+    dir: shared.getCacheDir(this.index, 'debug'),
+    an: 'testsuite'
   })
 
   testStats.screenView(this.name)

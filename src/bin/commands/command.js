@@ -1,4 +1,5 @@
 'use strict'
+const t = require('typical')
 
 class Command {
   optionDefinitions () {
@@ -56,11 +57,15 @@ class Command {
       { header: 'Options', optionList: this.optionDefinitions() }
     ]
   }
-  getData (options) {
-
+  execute () {
+    throw new Error('not implemented')
   }
   cliView (data) {
-    return JSON.stringify(data, null, '  ')
+    if (t.isString(data)) {
+      return data
+    } else {
+      return require('util').inspect(data, { depth: 13, colors: true })
+    }
   }
 }
 

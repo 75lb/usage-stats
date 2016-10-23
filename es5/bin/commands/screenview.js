@@ -25,12 +25,11 @@ var ScreenView = function (_Command) {
   _createClass(ScreenView, [{
     key: 'optionDefinitions',
     value: function optionDefinitions() {
-      return _get(ScreenView.prototype.__proto__ || Object.getPrototypeOf(ScreenView.prototype), 'optionDefinitions', this).call(this).concat([{ name: 'cd', type: String }]);
+      return _get(ScreenView.prototype.__proto__ || Object.getPrototypeOf(ScreenView.prototype), 'optionDefinitions', this).call(this).concat([{ name: 'cd', type: String, description: 'Screen name' }]);
     }
   }, {
-    key: 'getData',
-    value: function getData(options) {
-      _get(ScreenView.prototype.__proto__ || Object.getPrototypeOf(ScreenView.prototype), 'getData', this).call(this, options);
+    key: 'execute',
+    value: function execute(options) {
       options = options || {};
       if (!options.cd) throw new Error('cd required');
       var usage = new UsageStats(options.tid, options);

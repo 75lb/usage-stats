@@ -13,7 +13,7 @@ runner.test('new UsageStats(): trackingId required', function () {
 });
 
 runner.test('._createHit(map): returns map of defaults merged with supplied', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   a.throws(function () {
     return testStats._createHit('fail');
   });
@@ -24,7 +24,7 @@ runner.test('._createHit(map): returns map of defaults merged with supplied', fu
 });
 
 runner.test('.defaults: sent with every hit', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   a.strictEqual(testStats.defaults.has('v'), true);
   a.strictEqual(testStats.defaults.has('tid'), true);
 
@@ -36,7 +36,7 @@ runner.test('.defaults: sent with every hit', function () {
 });
 
 runner.test('.screenview(name): creates hit', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   var hit = testStats.screenView('test-screen');
   a.strictEqual(testStats._hits.length, 1);
   a.strictEqual(hit.get('t'), 'screenview');
@@ -44,7 +44,7 @@ runner.test('.screenview(name): creates hit', function () {
 });
 
 runner.test('.screenview(name, params)', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   var params = new Map();
   params.set('cm1', 1);
   params.set('cm2', 2);
@@ -57,7 +57,7 @@ runner.test('.screenview(name, params)', function () {
 });
 
 runner.test('.start(sessionParams): applies sessionParams to all hits in session', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   var sessionParams = new Map([['cd1', 'one']]);
   testStats.start(sessionParams);
   var hit = testStats.screenView('screen');
@@ -87,7 +87,7 @@ runner.test('.start(sessionParams): applies sessionParams to all hits in session
 });
 
 runner.test('.event(): validation', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   a.throws(function () {
     testStats.event('test-category');
   });
@@ -97,7 +97,7 @@ runner.test('.event(): validation', function () {
 });
 
 runner.test('.event(category, action): no optionals, creates hit', function () {
-  var testStats = new UsageStats('UA-00000000-0');
+  var testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' });
   var hit = testStats.event('test-category', 'test-action');
   a.strictEqual(testStats._hits.length, 1);
   a.strictEqual(hit.get('ec'), 'test-category');
@@ -109,8 +109,8 @@ runner.test('.event(category, action): no optionals, creates hit', function () {
 runner.test('.event(category, action): with optionals, creates hit', function () {
   var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
   var hit = testStats.event('test-category', 'test-action', {
-    label: 'label',
-    value: 'value'
+    el: 'label',
+    ev: 'value'
   });
   a.strictEqual(testStats._hits.length, 1);
   a.strictEqual(hit.get('ec'), 'test-category');

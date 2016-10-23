@@ -7,7 +7,7 @@
 
 # usage-stats
 
-A minimal, offline-friendly [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in node.js applications.
+A minimal, offline-friendly [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in shell and javascript applications.
 
 This is only a low-level client API, it doesn't hold any opinion of how usage tracking should be done. If you're looking for a convention which leverages the power and flexibility of [Custom Metrics and Dimensions](https://support.google.com/analytics/answer/2709828?hl=en&ref_topic=2709827), take a look at [app-usage-stats](https://github.com/75lb/app-usage-stats).
 
@@ -60,6 +60,15 @@ try {
 usageStats.end().send()
 ```
 
+### Command line
+
+All operations are available via the command line client, making tracking shell scripts possible:
+
+```sh
+cp files backup
+usage-stats event --tid UA-98765432-1 --ec Scheduled --ea Backup
+```
+
 ## Parameters
 
 See [here](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters) for the full list of Google Analytics Measurement Protocol parameters.
@@ -72,6 +81,32 @@ All parameters are send on demand, beside this list.
 * [Client ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#cid) (a random UUID, generated once per OS user and stored)
 * [Language](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ul) (`process.env.LANG`, if set)
 * [Screen resolution](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sr) (terminal rows by columns, by default)
+
+## CLI Reference
+
+To install the command line client:
+
+```
+$ npm install -g usage-stats
+```
+
+Command list:
+
+<pre><code>
+<strong>usage-stats</strong>
+
+  A minimal, offline-friendly Google Analytics Measurement Protocol client for
+  tracking usage statistics in shell and javascript applications.
+
+<strong>Synopsis</strong>
+
+  $ usage-stats &lt;command&gt; &lt;command-options&gt;
+
+<strong>Commands</strong>
+
+  screenview   Track a screenview
+  event        Track an event
+</pre></code>
 
 ## API Reference
 

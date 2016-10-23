@@ -106,7 +106,6 @@ var UsageStats = function () {
 
       var hit = this._createHit(new Map([['t', 'event'], ['ec', category], ['ea', action]]), options);
 
-      var t = require('typical');
       if (t.isDefined(options.el)) hit.set('el', options.el);
       if (t.isDefined(options.ev)) hit.set('ev', options.ev);
       this._hits.push(hit);

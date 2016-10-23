@@ -5,11 +5,10 @@ const UsageStats = require('../../../')
 class ScreenView extends Command {
   optionDefinitions () {
     return super.optionDefinitions().concat([
-      { name: 'cd', type:String }
+      { name: 'cd', type:String, description: 'Screen name' }
     ])
   }
-  getData (options) {
-    super.getData(options)
+  execute (options) {
     options = options || {}
     if (!options.cd) throw new Error('cd required')
     const usage = new UsageStats(options.tid, options)
