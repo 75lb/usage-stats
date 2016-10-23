@@ -18,8 +18,13 @@ This is a low-level API client, it doesn't hold any opinion of how usage trackin
 Tracking statistics in shell scripts:
 
 ```sh
+# Track an event: category 'Backup', action 'start'
 usage-stats event --tid UA-98765432-1 --ec Backup --ea start
+
+# Perform the backup
 cp files/** backup/
+
+# Track an event: category 'Backup', action 'complete'
 usage-stats event --tid UA-98765432-1 --ec Backup --ea complete
 ```
 
@@ -89,7 +94,7 @@ To install the command line client:
 $ npm install -g usage-stats
 ```
 
-Command list:
+Running the tool with no arguments will print the usage guide:
 
 <pre><code><strong>usage-stats</strong>
 
