@@ -37,7 +37,7 @@ var NoCommand = function (_Command) {
         content: 'A minimal, offline-friendly Google Analytics Measurement Protocol client for tracking usage statistics in shell and javascript applications.'
       }, {
         header: 'Synopsis',
-        content: ['$ usage-stats <command> <command-options>']
+        content: ['$ usage-stats <command> <command-options>', '$ usage-stats <command> --help']
       }, {
         header: 'Commands',
         content: this.commandList.filter(function (c) {

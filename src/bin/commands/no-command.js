@@ -22,7 +22,8 @@ class NoCommand extends Command {
       {
         header: 'Synopsis',
         content: [
-          '$ usage-stats <command> <command-options>'
+          '$ usage-stats <command> <command-options>',
+          '$ usage-stats <command> --help'
         ]
       },
       {
