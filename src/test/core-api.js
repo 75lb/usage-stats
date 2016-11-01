@@ -143,9 +143,9 @@ runner.test('._createHitsPayload(hits): returns correct form data', function () 
   a.strictEqual(result, 'hit=1\nhit=2&ua=test\nhit=3&cd1=cd1&ua=ua')
 })
 
-runner.test('.exception(msg, isFatal)', function () {
+runner.test('.exception()', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
-  const hit = testStats.exception('test', 1)
+  const hit = testStats.exception({ exd: 'test', exf: true })
   a.strictEqual(testStats._hits.length, 1)
   a.strictEqual(hit.get('t'), 'exception')
   a.strictEqual(hit.get('exd'), 'test')
@@ -154,7 +154,9 @@ runner.test('.exception(msg, isFatal)', function () {
 
 runner.test('exception hitParams', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
-  const hit = testStats.exception('test error', 1, {
+  const hit = testStats.exception({
+    exd: 'test',
+    exf: true,
     hitParams: new Map([
       [ 'cd1', 'cd1' ],
       [ 'cd2', 'cd2' ]

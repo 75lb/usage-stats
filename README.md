@@ -34,13 +34,11 @@ The most trivial example.
 
 ```js
 const UsageStats = require('usage-stats')
-const usageStats = new UsageStats('UA-98765432-1')
+const usageStats = new UsageStats('UA-98765432-1', { an: 'example' })
 
-// track a hit on the 'main' screen with 'simple' mode set.
-usageStats
-  .screenView('main')
-  .event('option', 'mode', 'simple')
-  .send()
+usageStats.screenView('screen name')
+usageStats.event('category', 'action')
+usageStats.send()
 ```
 
 More realistic usage in a server application:
@@ -48,8 +46,8 @@ More realistic usage in a server application:
 ```js
 const UsageStats = require('usage-stats')
 const usageStats = new UsageStats('UA-98765432-1', {
-  name: 'encode-video',
-  version: '1.0.0'
+  an: 'encode-video',
+  av: '1.0.0'
 })
 
 // start a new session
@@ -110,6 +108,7 @@ Running the tool with no arguments will print the usage guide:
 
   screenview   Track a screenview
   event        Track an event
+  exception    Track an exception
 </code></pre>
 
 ## API Reference
@@ -125,7 +124,7 @@ Running the tool with no arguments will print the usage guide:
     * [.enable()](#module_usage-stats--UsageStats+enable) ↩︎
     * [.event(category, action, [options])](#module_usage-stats--UsageStats+event) ⇒ <code>Map</code>
     * [.screenView(name, [options])](#module_usage-stats--UsageStats+screenView) ⇒ <code>Map</code>
-    * [.exception(description, isFatal)](#module_usage-stats--UsageStats+exception) ⇒ <code>Map</code>
+    * [.exception([options])](#module_usage-stats--UsageStats+exception) ⇒ <code>Map</code>
     * [.send([options])](#module_usage-stats--UsageStats+send) ⇒ <code>Promise</code>
     * [.debug()](#module_usage-stats--UsageStats+debug) ⇒ <code>Promise</code>
     * [.abort()](#module_usage-stats--UsageStats+abort) ↩︎
@@ -150,20 +149,20 @@ Running the tool with no arguments will print the usage guide:
 **Example**  
 ```js
 const usageStats = new UsageStats('UA-98765432-1', {
-  name: 'sick app',
-  version: '1.0.0'
+  an: 'sick app',
+  av: '1.0.0'
 })
 ```
 <a name="module_usage-stats--UsageStats.UsageStats+dir"></a>
 
 ### usageStats.dir : <code>string</code>
-Cache directory where the queue and client ID is kept. Defaults to `~/.usage-stats`.
+Cache directory. Defaults to `~/.usage-stats`.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 <a name="module_usage-stats--UsageStats.UsageStats+defaults"></a>
 
 ### usageStats.defaults : <code>Map</code>
-Set parameters on this map to send them with every hit.
+A list of parameters to be to sent with every hit.
 
 **Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 **Example**  
@@ -243,15 +242,16 @@ Track a screenview. All screenview hits are queued until `.send()` is called. Re
 
 <a name="module_usage-stats--UsageStats+exception"></a>
 
-### usageStats.exception(description, isFatal) ⇒ <code>Map</code>
+### usageStats.exception([options]) ⇒ <code>Map</code>
 Track a exception. All exception hits are queued until `.send()` is called.
 
 **Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| description | <code>string</code> | Error message |
-| isFatal | <code>boolean</code> | Set true if the exception was fatal |
+| [options] | <code>object</code> | optional params |
+| [options.exd] | <code>string</code> | Error message |
+| [options.exf] | <code>boolean</code> | Set true if the exception was fatal |
 | [options.hitParams] | <code>Array.&lt;map&gt;</code> | One or more additional params to set on the hit. |
 
 <a name="module_usage-stats--UsageStats+send"></a>

@@ -128,10 +128,12 @@ var UsageStats = function () {
     }
   }, {
     key: 'exception',
-    value: function exception(description, isFatal, options) {
+    value: function exception(options) {
       if (this._disabled) return this;
       options = options || {};
-      var hit = this._createHit(new Map([['t', 'exception'], ['exd', description], ['exf', isFatal ? 1 : 0]]), options);
+      var hit = this._createHit(new Map([['t', 'exception']]), options);
+      if (t.isDefined(options.exd)) hit.set('exd', options.exd);
+      if (t.isDefined(options.exf)) hit.set('exf', options.exf ? 1 : 0);
       this._hits.push(hit);
       return hit;
     }

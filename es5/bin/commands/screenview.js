@@ -28,6 +28,13 @@ var ScreenView = function (_Command) {
       return _get(ScreenView.prototype.__proto__ || Object.getPrototypeOf(ScreenView.prototype), 'optionDefinitions', this).call(this).concat([{ name: 'cd', type: String, description: 'Screen name' }]);
     }
   }, {
+    key: 'usage',
+    value: function usage() {
+      var sections = _get(ScreenView.prototype.__proto__ || Object.getPrototypeOf(ScreenView.prototype), 'usage', this).call(this);
+      sections.unshift({ header: 'usage-stats screenview', content: 'Track a screen view.' });
+      return sections;
+    }
+  }, {
     key: 'execute',
     value: function execute(options) {
       options = options || {};

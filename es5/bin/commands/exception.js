@@ -13,25 +13,25 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Command = require('./command');
 var UsageStats = require('../../../');
 
-var Event = function (_Command) {
-  _inherits(Event, _Command);
+var Exception = function (_Command) {
+  _inherits(Exception, _Command);
 
-  function Event() {
-    _classCallCheck(this, Event);
+  function Exception() {
+    _classCallCheck(this, Exception);
 
-    return _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).apply(this, arguments));
+    return _possibleConstructorReturn(this, (Exception.__proto__ || Object.getPrototypeOf(Exception)).apply(this, arguments));
   }
 
-  _createClass(Event, [{
+  _createClass(Exception, [{
     key: 'optionDefinitions',
     value: function optionDefinitions() {
-      return _get(Event.prototype.__proto__ || Object.getPrototypeOf(Event.prototype), 'optionDefinitions', this).call(this).concat([{ name: 'ec', type: String, description: 'Event category' }, { name: 'ea', type: String, description: 'Event action' }, { name: 'el', type: String, description: 'Event label' }, { name: 'ev', type: String, description: 'Event value' }]);
+      return _get(Exception.prototype.__proto__ || Object.getPrototypeOf(Exception.prototype), 'optionDefinitions', this).call(this).concat([{ name: 'exd', type: String, description: 'Description' }, { name: 'exf', type: Boolean, description: 'Is a fatal exception' }]);
     }
   }, {
     key: 'usage',
     value: function usage() {
-      var sections = _get(Event.prototype.__proto__ || Object.getPrototypeOf(Event.prototype), 'usage', this).call(this);
-      sections.unshift({ header: 'usage-stats event', content: 'Track an event.' });
+      var sections = _get(Exception.prototype.__proto__ || Object.getPrototypeOf(Exception.prototype), 'usage', this).call(this);
+      sections.unshift({ header: 'usage-stats exception', content: 'Track an exception.' });
       return sections;
     }
   }, {
@@ -39,7 +39,7 @@ var Event = function (_Command) {
     value: function execute(options) {
       options = options || {};
       var usage = new UsageStats(options.tid, options);
-      var hit = usage.event(options.ec, options.ea, options);
+      usage.exception(options);
       if (options.debug) {
         return usage.debug();
       } else {
@@ -48,7 +48,7 @@ var Event = function (_Command) {
     }
   }]);
 
-  return Event;
+  return Exception;
 }(Command);
 
-module.exports = Event;
+module.exports = Exception;

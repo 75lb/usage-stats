@@ -13,25 +13,20 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Command = require('./command');
 var UsageStats = require('../../../');
 
-var Event = function (_Command) {
-  _inherits(Event, _Command);
+var Start = function (_Command) {
+  _inherits(Start, _Command);
 
-  function Event() {
-    _classCallCheck(this, Event);
+  function Start() {
+    _classCallCheck(this, Start);
 
-    return _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).apply(this, arguments));
+    return _possibleConstructorReturn(this, (Start.__proto__ || Object.getPrototypeOf(Start)).apply(this, arguments));
   }
 
-  _createClass(Event, [{
-    key: 'optionDefinitions',
-    value: function optionDefinitions() {
-      return _get(Event.prototype.__proto__ || Object.getPrototypeOf(Event.prototype), 'optionDefinitions', this).call(this).concat([{ name: 'ec', type: String, description: 'Event category' }, { name: 'ea', type: String, description: 'Event action' }, { name: 'el', type: String, description: 'Event label' }, { name: 'ev', type: String, description: 'Event value' }]);
-    }
-  }, {
+  _createClass(Start, [{
     key: 'usage',
     value: function usage() {
-      var sections = _get(Event.prototype.__proto__ || Object.getPrototypeOf(Event.prototype), 'usage', this).call(this);
-      sections.unshift({ header: 'usage-stats event', content: 'Track an event.' });
+      var sections = _get(Start.prototype.__proto__ || Object.getPrototypeOf(Start.prototype), 'usage', this).call(this);
+      sections.unshift({ header: 'usage-stats end', content: 'End the session.' });
       return sections;
     }
   }, {
@@ -39,16 +34,11 @@ var Event = function (_Command) {
     value: function execute(options) {
       options = options || {};
       var usage = new UsageStats(options.tid, options);
-      var hit = usage.event(options.ec, options.ea, options);
-      if (options.debug) {
-        return usage.debug();
-      } else {
-        return usage.send();
-      }
+      usage.end(options);
     }
   }]);
 
-  return Event;
+  return Start;
 }(Command);
 
-module.exports = Event;
+module.exports = Start;

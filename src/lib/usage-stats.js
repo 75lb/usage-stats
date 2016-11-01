@@ -30,8 +30,8 @@ class UsageStats {
    * @param [options.debugUrl] {string} - Defaults to `'https://www.google-analytics.com/debug/collect'`.
    * @example
    * const usageStats = new UsageStats('UA-98765432-1', {
-   *   name: 'sick app',
-   *   version: '1.0.0'
+   *   an: 'sick app',
+   *   av: '1.0.0'
    * })
    */
   constructor (trackingId, options) {
@@ -41,7 +41,7 @@ class UsageStats {
     const homePath = require('home-path')
 
     /**
-     * Cache directory where the queue and client ID is kept. Defaults to `~/.usage-stats`.
+     * Cache directory. Defaults to `~/.usage-stats`.
      * @type {string}
      */
     this.dir = options.dir || path.resolve(homePath(), '.usage-stats')
@@ -54,7 +54,7 @@ class UsageStats {
     }
 
     /**
-     * Set parameters on this map to send them with every hit.
+     * A list of parameters to be to sent with every hit.
      * @type {Map}
      * @example
      * usageStats.defaults
@@ -204,19 +204,20 @@ class UsageStats {
 
   /**
    * Track a exception. All exception hits are queued until `.send()` is called.
-   * @param {string} - Error message
-   * @param {boolean} - Set true if the exception was fatal
+   * @param [options] {object} - optional params
+   * @param [options.exd] {string} - Error message
+   * @param [options.exf] {boolean} - Set true if the exception was fatal
    * @param [options.hitParams] {map[]} - One or more additional params to set on the hit.
    * @returns {Map}
    */
-  exception (description, isFatal, options) {
+  exception (options) {
     if (this._disabled) return this
     options = options || {}
     let hit = this._createHit(new Map([
-      [ 't', 'exception' ],
-      [ 'exd', description ],
-      [ 'exf', isFatal ? 1 : 0 ]
+      [ 't', 'exception' ]
     ]), options)
+    if (t.isDefined(options.exd)) hit.set('exd', options.exd)
+    if (t.isDefined(options.exf)) hit.set('exf', options.exf ? 1 : 0)
     this._hits.push(hit)
     return hit
   }

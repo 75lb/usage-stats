@@ -34,13 +34,11 @@ The most trivial example.
 
 ```js
 const UsageStats = require('usage-stats')
-const usageStats = new UsageStats('UA-98765432-1')
+const usageStats = new UsageStats('UA-98765432-1', { an: 'example' })
 
-// track a hit on the 'main' screen with 'simple' mode set.
-usageStats
-  .screenView('main')
-  .event('option', 'mode', 'simple')
-  .send()
+usageStats.screenView('screen name')
+usageStats.event('category', 'action')
+usageStats.send()
 ```
 
 More realistic usage in a server application:
@@ -48,8 +46,8 @@ More realistic usage in a server application:
 ```js
 const UsageStats = require('usage-stats')
 const usageStats = new UsageStats('UA-98765432-1', {
-  name: 'encode-video',
-  version: '1.0.0'
+  an: 'encode-video',
+  av: '1.0.0'
 })
 
 // start a new session
@@ -110,6 +108,7 @@ Running the tool with no arguments will print the usage guide:
 
   screenview   Track a screenview
   event        Track an event
+  exception    Track an exception
 </code></pre>
 
 ## API Reference

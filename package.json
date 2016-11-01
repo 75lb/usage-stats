@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "array-back": "^1.0.3",
-    "cli-commands": "0.0.1",
+    "cli-commands": "0.1.0",
     "core-js": "^2.4.1",
     "feature-detect-es6": "^1.3.1",
     "home-path": "^1.0.3",
@@ -40,7 +40,7 @@
     "typical": "^2.6.0"
   },
   "devDependencies": {
-    "babel-preset-es2015": "^6.16.0",
+    "babel-preset-es2015": "^6.18.0",
     "core-assert": "~0.2.1",
     "coveralls": "^2.11.14",
     "jsdoc-to-markdown": "^2.0.1",

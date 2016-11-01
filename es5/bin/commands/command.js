@@ -19,7 +19,20 @@ var Command = function () {
   }, {
     key: 'usage',
     value: function usage() {
-      return [{ header: 'Options', optionList: this.optionDefinitions() }];
+      var optionDefinitions = this.optionDefinitions().filter(function (def) {
+        return !(def.name.startsWith('cd') || def.name.startsWith('cm'));
+      });
+      optionDefinitions.push({
+        name: 'cd[italic]{n}',
+        type: String,
+        description: 'Custom Dimension [italic]{n}, where [italic]{n} is an index between 1 and 20.'
+      });
+      optionDefinitions.push({
+        name: 'cm[italic]{n}',
+        type: String,
+        description: 'Custom Metric [italic]{n}, where [italic]{n} is an index between 1 and 20.'
+      });
+      return [{ header: 'Options', optionList: optionDefinitions }];
     }
   }, {
     key: 'execute',
@@ -29,7 +42,7 @@ var Command = function () {
   }, {
     key: 'cliView',
     value: function cliView(data) {
-      if (t.isString(data)) {
+      if (t.isString(data) || !t.isDefined(data)) {
         return data;
       } else {
         return require('util').inspect(data, { depth: 13, colors: true });

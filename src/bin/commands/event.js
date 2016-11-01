@@ -13,7 +13,7 @@ class Event extends Command {
   }
   usage () {
     const sections = super.usage()
-    sections.unshift({ header: 'event', content: 'Track an event.' })
+    sections.unshift({ header: 'usage-stats event', content: 'Track an event.' })
     return sections
   }
   execute (options) {
