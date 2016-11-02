@@ -35,7 +35,7 @@ runner.test('.send(): successful with nothing queued - still nothing queued', fu
     return UsageTest;
   }(UsageStats);
 
-  var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
+  var testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index), an: 'test' });
   testStats.screenView('test');
   return testStats.send().then(function (responses) {
     if (responses[0].err && responses[0].err.code === 'ENOTFOUND') return Promise.resolve("offline, can't test");
@@ -70,8 +70,8 @@ runner.test('.send(): successful with something queued - all hits sent and queue
   }(UsageStats);
 
   var testStats = new UsageTest('UA-00000000-0', {
-    name: 'usage-stats',
-    version: require('../../package').version,
+    an: 'usage-stats',
+    av: require('../../package').version,
     dir: shared.getCacheDir(this.index)
   });
   var hit = new Map([['hit', 1]]);

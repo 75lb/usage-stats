@@ -39,7 +39,7 @@ var Event = function (_Command) {
     value: function execute(options) {
       options = options || {};
       var usage = new UsageStats(options.tid, options);
-      var hit = usage.event(options.ec, options.ea, options);
+      usage.event(options.ec, options.ea, options);
       if (options.debug) {
         return usage.debug();
       } else {

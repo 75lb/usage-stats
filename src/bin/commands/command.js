@@ -48,7 +48,7 @@ class Command {
       { name: 'cm17', type: String, description: 'Custom Metric 1' },
       { name: 'cm18', type: String, description: 'Custom Metric 1' },
       { name: 'cm19', type: String, description: 'Custom Metric 1' },
-      { name: 'cm20', type: String, description: 'Custom Metric 1' },
+      { name: 'cm20', type: String, description: 'Custom Metric 1' }
 
     ]
   }

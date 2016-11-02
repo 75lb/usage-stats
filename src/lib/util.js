@@ -24,9 +24,9 @@ function jsonToHits (json) {
   }
 }
 
-function mapToJson(map) {
+function mapToJson (map) {
   return JSON.stringify([...map])
 }
-function jsonToMap(json) {
+function jsonToMap (json) {
   return new Map(JSON.parse(json))
 }

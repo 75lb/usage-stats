@@ -11,9 +11,9 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var TestRunner = require('test-runner');
 var UsageStats = require('../../');
 var a = require('core-assert');
-var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
+var fs = require('fs');
 
 runner.test('._enqueue(hits): writes hits to cacheDir', function () {
   var testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) });
@@ -127,7 +127,7 @@ runner.test('.send(): failed with nothing queued - hit is queued', function () {
   return new Promise(function (resolve, reject) {
     testStats.send().then(function () {
       reject(new Error('should not reach here'));
-    }).catch(function (err) {
+    }).catch(function () {
       var queued = testStats._dequeue();
       a.strictEqual(queued.length, 1);
       a.strictEqual(queued[0].get('cd'), 'test');

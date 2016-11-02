@@ -2,9 +2,9 @@
 const TestRunner = require('test-runner')
 const UsageStats = require('../../')
 const a = require('core-assert')
-const os = require('os')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
+const fs = require('fs')
 
 runner.test('._enqueue(hits): writes hits to cacheDir', function () {
   const testStats = new UsageStats('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
@@ -53,7 +53,7 @@ runner.test('._dequeue(): handles garbage on the queue', function () {
   fs.writeFileSync(testStats._queuePath, 'blah')
 
   let queue
-  a.doesNotThrow(() => queue = testStats._dequeue())
+  a.doesNotThrow(() => (queue = testStats._dequeue()))
   a.deepEqual(queue, [])
 })
 
@@ -95,7 +95,7 @@ runner.test('.send(): failed with nothing queued - hit is queued', function () {
       .then(() => {
         reject(new Error('should not reach here'))
       })
-      .catch(err => {
+      .catch(() => {
         const queued = testStats._dequeue()
         a.strictEqual(queued.length, 1)
         a.strictEqual(queued[0].get('cd'), 'test')

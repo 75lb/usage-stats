@@ -1,6 +1,5 @@
 'use strict'
 const Command = require('./command')
-const UsageStats = require('../../../')
 const commandLineUsage = require('command-line-usage')
 
 class NoCommand extends Command {
@@ -29,7 +28,7 @@ class NoCommand extends Command {
       {
         header: 'Commands',
         content: this.commandList
-          .filter(c => c.name !== null )
+          .filter(c => c.name !== null)
           .map(c => ({ name: c.name, desc: c.desc }))
       }
     ]

@@ -40,7 +40,7 @@ var ScreenView = function (_Command) {
       options = options || {};
       if (!options.cd) throw new Error('cd required');
       var usage = new UsageStats(options.tid, options);
-      var hit = usage.screenView(options.cd, options);
+      usage.screenView(options.cd, options);
       if (options.debug) {
         return usage.debug();
       } else {

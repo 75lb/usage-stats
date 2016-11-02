@@ -13,7 +13,7 @@ runner.test('.send(): successful with nothing queued - still nothing queued', fu
     }
   }
 
-  const testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index) })
+  const testStats = new UsageTest('UA-00000000-0', { dir: shared.getCacheDir(this.index), an: 'test' })
   testStats.screenView('test')
   return testStats.send()
     .then(responses => {
@@ -36,8 +36,8 @@ runner.test('.send(): successful with something queued - all hits sent and queue
   }
 
   const testStats = new UsageTest('UA-00000000-0', {
-    name: 'usage-stats',
-    version: require('../../package').version,
+    an: 'usage-stats',
+    av: require('../../package').version,
     dir: shared.getCacheDir(this.index)
   })
   const hit = new Map([[ 'hit', 1 ]])

@@ -5,10 +5,10 @@ const UsageStats = require('../../../')
 class Event extends Command {
   optionDefinitions () {
     return super.optionDefinitions().concat([
-      { name: 'ec', type:String, description: 'Event category' },
-      { name: 'ea', type:String, description: 'Event action' },
-      { name: 'el', type:String, description: 'Event label' },
-      { name: 'ev', type:String, description: 'Event value' },
+      { name: 'ec', type: String, description: 'Event category' },
+      { name: 'ea', type: String, description: 'Event action' },
+      { name: 'el', type: String, description: 'Event label' },
+      { name: 'ev', type: String, description: 'Event value' }
     ])
   }
   usage () {
@@ -19,7 +19,7 @@ class Event extends Command {
   execute (options) {
     options = options || {}
     const usage = new UsageStats(options.tid, options)
-    const hit = usage.event(options.ec, options.ea, options)
+    usage.event(options.ec, options.ea, options)
     if (options.debug) {
       return usage.debug()
     } else {

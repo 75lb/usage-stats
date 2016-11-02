@@ -3,7 +3,6 @@
 var TestRunner = require('test-runner');
 var UsageStats = require('../../');
 var a = require('core-assert');
-var os = require('os');
 var runner = new TestRunner();
 var shared = require('./lib/shared');
 
@@ -25,9 +24,8 @@ runner.test('.abort(): aborting throws, hit queued', function () {
 
   return new Promise(function (resolve, reject) {
     testStats.send().then(function (responses) {
-      throw new Error('should not reach here');
-      reject();
-    }).catch(function (err) {
+      reject(new Error('should not reach here'));
+    }).catch(function () {
       var queued = testStats._dequeue();
       a.strictEqual(queued.length, 1);
       a.strictEqual(testStats._aborted, false);
@@ -106,7 +104,7 @@ runner.test('.abort(): multiple requests - throws, all requests queued', functio
     testStats.send().then(function (responses) {
       server.close();
       reject(new Error('should not reach here'));
-    }).catch(function (err) {
+    }).catch(function () {
       a.strictEqual(testStats.queueLength, 100);
       a.strictEqual(testStats._aborted, false);
       server.close();

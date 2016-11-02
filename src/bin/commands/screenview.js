@@ -5,7 +5,7 @@ const UsageStats = require('../../../')
 class ScreenView extends Command {
   optionDefinitions () {
     return super.optionDefinitions().concat([
-      { name: 'cd', type:String, description: 'Screen name' }
+      { name: 'cd', type: String, description: 'Screen name' }
     ])
   }
   usage () {
@@ -17,7 +17,7 @@ class ScreenView extends Command {
     options = options || {}
     if (!options.cd) throw new Error('cd required')
     const usage = new UsageStats(options.tid, options)
-    const hit = usage.screenView(options.cd, options)
+    usage.screenView(options.cd, options)
     if (options.debug) {
       return usage.debug()
     } else {

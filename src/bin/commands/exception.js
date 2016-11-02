@@ -6,7 +6,7 @@ class Exception extends Command {
   optionDefinitions () {
     return super.optionDefinitions().concat([
       { name: 'exd', type: String, description: 'Description' },
-      { name: 'exf', type: Boolean, description: 'Is a fatal exception' },
+      { name: 'exf', type: Boolean, description: 'Is a fatal exception' }
     ])
   }
   usage () {
@@ -23,7 +23,6 @@ class Exception extends Command {
     } else {
       return usage.send()
     }
-
   }
 }
 
