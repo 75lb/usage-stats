@@ -258,10 +258,10 @@ var UsageStats = function () {
     value: function _createHitsPayload(hits) {
       return arrayify(hits).map(function (hit) {
         return Array.from(hit).map(function (_ref) {
-          var _ref2 = _slicedToArray(_ref, 2);
+          var _ref2 = _slicedToArray(_ref, 2),
+              key = _ref2[0],
+              value = _ref2[1];
 
-          var key = _ref2[0];
-          var value = _ref2[1];
           return key + '=' + encodeURIComponent(value);
         }).join('&');
       }).join(os.EOL);
