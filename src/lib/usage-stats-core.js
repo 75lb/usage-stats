@@ -304,7 +304,7 @@ class UsageStats {
    */
   _getClientId () {
     let cid = null
-    const uuid = require('node-uuid')
+    const uuid = require('uuid')
     const cidPath = path.resolve(this.dir, 'cid')
     try {
       cid = fs.readFileSync(cidPath, 'utf8')

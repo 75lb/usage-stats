@@ -206,7 +206,7 @@ var UsageStats = function () {
     key: '_getClientId',
     value: function _getClientId() {
       var cid = null;
-      var uuid = require('node-uuid');
+      var uuid = require('uuid');
       var cidPath = path.resolve(this.dir, 'cid');
       try {
         cid = fs.readFileSync(cidPath, 'utf8');
