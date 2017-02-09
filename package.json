@@ -5,8 +5,7 @@
   "description": "A minimal, offline-friendly Google Analytics Measurement Protocol client for tracking statistics in shell and javascript applications",
   "repository": "https://github.com/75lb/usage-stats.git",
   "license": "MIT",
-  "main": "main.js",
-  "bin": "bin.js",
+  "main": "lib/usage-stats",
   "keywords": [
     "google",
     "analytics",
@@ -20,36 +19,25 @@
     "ga"
   ],
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=4.0.0"
   },
   "scripts": {
-    "test": "node test.js",
-    "docs": "jsdoc2md -t jsdoc2md/README.hbs src/lib/usage-stats.js > README.md; echo",
-    "es5": "rm -rf es5 && babel --presets babel-preset-es2015 --no-comments src --out-dir es5",
-    "cover": "istanbul cover ./node_modules/.bin/test-runner src/test/*.js && cat coverage/lcov.info | ./node_modules/.bin/coveralls && rm -rf coverage; echo"
+    "test": "test-runner test/core-*.js",
+    "docs": "jsdoc2md -t jsdoc2md/README.hbs lib/usage-stats.js > README.md; echo",
+    "cover": "istanbul cover ./node_modules/.bin/test-runner test/core-*.js && cat coverage/lcov.info | ./node_modules/.bin/coveralls && rm -rf coverage; echo"
   },
   "dependencies": {
-    "array-back": "^1.0.3",
-    "cli-commands": "0.1.0",
-    "core-js": "^2.4.1",
-    "feature-detect-es6": "^1.3.1",
+    "array-back": "^1.0.4",
     "home-path": "^1.0.3",
     "mkdirp": "^0.5.1",
     "req-then": "^0.5.1",
     "typical": "^2.6.0",
-    "uuid": "^3.0.0"
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
-    "babel-preset-es2015": "^6.18.0",
-    "core-assert": "~0.2.1",
-    "coveralls": "^2.11.14",
+    "coveralls": "^2.11.16",
     "jsdoc-to-markdown": "^2.0.1",
     "rimraf": "^2.5.4",
-    "test-runner": "^0.2.5"
-  },
-  "standard": {
-    "ignore": [
-      "es5"
-    ]
+    "test-runner": "^0.3.0"
   }
 }

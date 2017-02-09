@@ -1,23 +1,29 @@
 'use strict'
 const TestRunner = require('test-runner')
-const UsageStats = require('../../')
-const a = require('core-assert')
+const UsageStats = require('../')
+const a = require('assert')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
-runner.test('.abort(): aborting throws, hit queued', function () {
+function getServer (port, delay) {
   const http = require('http')
   const server = http.createServer((req, res) => {
     setTimeout(() => {
       res.statusCode = 200
       res.end('yeah?')
-    }, 1000)
+    }, delay)
   })
-  server.listen(9000)
+  server.listen(port)
+  return server
+}
+
+runner.test('.abort(): aborting throws', function () {
+  const server = getServer(9000, 1000)
 
   const testStats = new UsageStats('UA-00000000-0', {
     dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9000'
+    url: 'http://localhost:9000',
+    an: 'testsuite'
   })
   testStats.screenView('test')
 
@@ -27,9 +33,6 @@ runner.test('.abort(): aborting throws, hit queued', function () {
         reject(new Error('should not reach here'))
       })
       .catch(() => {
-        const queued = testStats._dequeue()
-        a.strictEqual(queued.length, 1)
-        a.strictEqual(testStats._aborted, false)
         server.close()
         resolve()
       })
@@ -43,35 +46,25 @@ runner.test('.abort(): aborting throws, hit queued', function () {
 })
 
 runner.test('.abort(): called before .send() is a no-op', function () {
-  const testStats = new UsageStats('UA-00000000-0')
+  const testStats = new UsageStats('UA-00000000-0', { an: 'testsuite' })
   testStats.screenView('test')
   testStats.abort()
-  a.ok(!this._aborted)
 })
 
 runner.test('.abort(): abort after a completed send is a no-op', function () {
-  const http = require('http')
-  const server = http.createServer((req, res) => {
-    setTimeout(() => {
-      res.statusCode = 200
-      res.end('yeah?')
-    }, 20)
-  })
-  server.listen(9020)
+  const server = getServer(9020, 20)
 
   const testStats = new UsageStats('UA-00000000-0', {
     dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9020'
+    url: 'http://localhost:9020',
+    an: 'testsuite'
   })
   testStats.screenView('test')
 
   return new Promise((resolve, reject) => {
     testStats.send()
       .then(responses => {
-        a.strictEqual(testStats.queueLength, 0)
-        a.strictEqual(testStats._aborted, false)
         testStats.abort()
-        a.strictEqual(testStats._aborted, false)
         server.close()
         resolve()
       })
@@ -83,26 +76,22 @@ runner.test('.abort(): abort after a completed send is a no-op', function () {
   })
 })
 
-runner.test('.abort(): multiple requests - throws, all requests queued', function () {
-  const http = require('http')
-  const server = http.createServer((req, res) => {
-    setTimeout(() => {
-      res.statusCode = 200
-      res.end('yeah?')
-    }, 1000)
-  })
-  server.listen(9010)
+runner.test('.abort(): multiple requests - throws', function () {
+  const server = getServer(9010, 1000)
 
   const testStats = new UsageStats('UA-00000000-0', {
     dir: shared.getCacheDir(this.index, 'abort'),
-    url: 'http://localhost:9010'
+    url: 'http://localhost:9010',
+    an: 'testsuite'
   })
 
   for (let i = 0; i < 100; i++) {
-    testStats._enqueue(new Map([[ 'hit', i ]]))
+    testStats.screenView('test')
   }
 
   setTimeout(testStats.abort.bind(testStats), 50)
+
+  a.strictEqual(testStats._hits.length, 100)
 
   return new Promise((resolve, reject) => {
     testStats.send()
@@ -111,14 +100,35 @@ runner.test('.abort(): multiple requests - throws, all requests queued', functio
         reject(new Error('should not reach here'))
       })
       .catch(() => {
-        a.strictEqual(testStats.queueLength, 100)
-        a.strictEqual(testStats._aborted, false)
+        a.strictEqual(testStats._hits.length, 100)
         server.close()
         resolve()
       })
       .catch(err => {
         server.close()
         reject(err)
+      })
+  })
+})
+
+runner.test('.send({ timeout }): should abort after timeout period', function () {
+  const server = getServer(9030, 1000)
+  const testStats = new UsageStats('UA-00000000-0', {
+    dir: shared.getCacheDir(this.index, 'abort'),
+    url: 'http://localhost:9010',
+    an: 'testsuite'
+  })
+
+  testStats.exception('test error', 1)
+  return new Promise((resolve, reject) => {
+    testStats.send({ timeout: 100 })
+      .then(() => {
+        server.close()
+        reject()
+      })
+      .catch(() => {
+        server.close()
+        resolve()
       })
   })
 })

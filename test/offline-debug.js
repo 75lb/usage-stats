@@ -1,7 +1,7 @@
 'use strict'
 const TestRunner = require('test-runner')
-const UsageStats = require('../../')
-const a = require('core-assert')
+const UsageStats = require('../')
+const a = require('assert')
 const shared = require('./lib/shared')
 
 const runner = new TestRunner()
@@ -9,7 +9,7 @@ const runner = new TestRunner()
 runner.test('.debug() live screenview: resolves with result, hit queued', function () {
   const testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
-    version: require('../../package').version,
+    version: require('../package').version,
     dir: shared.getCacheDir(this.index, 'debug')
   })
 
@@ -32,7 +32,7 @@ runner.test('.debug() live screenview: resolves with result, hit queued', functi
 runner.test('.debug() live screenview with something queued: resolves, queue correct', function () {
   const testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
-    version: require('../../package').version,
+    version: require('../package').version,
     dir: shared.getCacheDir(this.index, 'debug')
   })
   const hit = testStats._createHit(new Map([[ 'one', 'test' ]]))

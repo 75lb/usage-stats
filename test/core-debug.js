@@ -1,14 +1,14 @@
 'use strict'
 const TestRunner = require('test-runner')
-const UsageStats = require('../../')
-const a = require('core-assert')
+const UsageStats = require('../')
+const a = require('assert')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
 
 runner.test('.debug() live screenview: resolves with result', function () {
   const testStats = new UsageStats('UA-70853320-4', {
     name: 'usage-stats',
-    version: require('../../package').version,
+    version: require('../package').version,
     dir: shared.getCacheDir(this.index, 'debug'),
     an: 'testsuite'
   })

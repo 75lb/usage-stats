@@ -1,7 +1,7 @@
 'use strict'
 const TestRunner = require('test-runner')
-const UsageStats = require('../../')
-const a = require('core-assert')
+const UsageStats = require('../')
+const a = require('assert')
 const os = require('os')
 const runner = new TestRunner()
 const shared = require('./lib/shared')
@@ -37,7 +37,7 @@ runner.test('.send(): successful with something queued - all hits sent and queue
 
   const testStats = new UsageTest('UA-00000000-0', {
     an: 'usage-stats',
-    av: require('../../package').version,
+    av: require('../package').version,
     dir: shared.getCacheDir(this.index)
   })
   const hit = new Map([[ 'hit', 1 ]])

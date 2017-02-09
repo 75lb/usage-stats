@@ -7,7 +7,7 @@ exports.getCacheDir = getCacheDir
 
 function getCacheDir (index, name) {
   name = name || 'api'
-  const tmpPath = path.resolve(__dirname, '../../../tmp', name)
+  const tmpPath = path.resolve(__dirname, '../../tmp', name)
 
   try {
     fs.mkdirSync(tmpPath)
