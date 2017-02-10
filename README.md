@@ -9,26 +9,9 @@
 
 A minimal, offline-friendly [Google Analytics Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/v1/) client for tracking usage statistics in shell and javascript applications.
 
-This is a low-level API client, it doesn't hold any opinion of how usage tracking should be done. If you're looking for a convention which leverages the power and flexibility of [Custom Metrics and Dimensions](https://support.google.com/analytics/answer/2709828?hl=en&ref_topic=2709827), take a look at [app-usage-stats](https://github.com/75lb/app-usage-stats).
+This is a low-level API client, it doesn't hold any opinion of how usage tracking should be done. If you're looking for a convention which leverages the power and flexibility of [Custom Metrics and Dimensions](https://support.google.com/analytics/answer/2709828?hl=en&ref_topic=2709827), take a look at [app-usage-stats](https://github.com/75lb/app-usage-stats). For the command line client see [usage-stats-cli](https://github.com/75lb/usage-stats-cli).
 
 ## Synopsis
-
-### Command line
-
-Tracking statistics in shell scripts:
-
-```sh
-# Track an event: category 'Backup', action 'start'
-usage-stats event --tid UA-98765432-1 --ec Backup --ea start
-
-# Perform the backup
-cp files/** backup/
-
-# Track an event: category 'Backup', action 'complete'
-usage-stats event --tid UA-98765432-1 --ec Backup --ea complete
-```
-
-### API
 
 The most trivial example.
 
@@ -83,33 +66,6 @@ All parameters are send on demand, beside this list.
 * [Client ID](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#cid) (a random UUID, generated once per OS user and stored)
 * [Language](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#ul) (`process.env.LANG`, if set)
 * [Screen resolution](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sr) (terminal rows by columns, by default)
-
-## CLI Reference
-
-To install the command line client:
-
-```
-$ npm install -g usage-stats
-```
-
-Running the tool with no arguments will print the usage guide:
-
-<pre><code><strong>usage-stats</strong>
-
-  A minimal, offline-friendly Google Analytics Measurement Protocol client for
-  tracking usage statistics in shell and javascript applications.
-
-<strong>Synopsis</strong>
-
-  $ usage-stats &lt;command&gt; &lt;command-options&gt;
-  $ usage-stats &lt;command&gt; --help
-
-<strong>Commands</strong>
-
-  screenview   Track a screenview
-  event        Track an event
-  exception    Track an exception
-</code></pre>
 
 ## API Reference
 
