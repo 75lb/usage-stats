@@ -32,21 +32,19 @@ var UsageStatsAbortable = function (_UsageStats) {
       options = options || {};
       var sendPromise = void 0;
       if (options.timeout) {
-        (function () {
-          var timeout = setTimeout(function () {
-            return _this2.abort();
-          }, options.timeout);
-          var endTimeout = function endTimeout() {
-            return clearTimeout(timeout);
-          };
-          sendPromise = _get(UsageStatsAbortable.prototype.__proto__ || Object.getPrototypeOf(UsageStatsAbortable.prototype), 'send', _this2).call(_this2).then(function (responses) {
-            endTimeout();
-            return responses;
-          }).catch(function (err) {
-            endTimeout();
-            throw err;
-          });
-        })();
+        var timeout = setTimeout(function () {
+          return _this2.abort();
+        }, options.timeout);
+        var endTimeout = function endTimeout() {
+          return clearTimeout(timeout);
+        };
+        sendPromise = _get(UsageStatsAbortable.prototype.__proto__ || Object.getPrototypeOf(UsageStatsAbortable.prototype), 'send', this).call(this).then(function (responses) {
+          endTimeout();
+          return responses;
+        }).catch(function (err) {
+          endTimeout();
+          throw err;
+        });
       } else {
         sendPromise = _get(UsageStatsAbortable.prototype.__proto__ || Object.getPrototypeOf(UsageStatsAbortable.prototype), 'send', this).call(this);
       }
