@@ -276,7 +276,7 @@ var UsageStats = function () {
     },
     set: function set(val) {
       this._dir = val;
-      var mkdirp = require('mkdirp');
+      var mkdirp = require('mkdirp2');
       mkdirp.sync(this._dir);
     }
   }]);
