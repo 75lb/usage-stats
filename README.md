@@ -114,13 +114,13 @@ const usageStats = new UsageStats('UA-98765432-1', {
 ### usageStats.dir : <code>string</code>
 Cache directory. Defaults to `~/.usage-stats`.
 
-**Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance property of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 <a name="module_usage-stats--UsageStats.UsageStats+defaults"></a>
 
 ### usageStats.defaults : <code>Map</code>
 A list of parameters to be to sent with every hit.
 
-**Kind**: instance property of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance property of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Example**  
 ```js
 usageStats.defaults
@@ -134,7 +134,7 @@ usageStats.defaults
 ### usageStats.start([sessionParams]) ↩︎
 Starts the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Chainable**  
 
 | Param | Type | Description |
@@ -146,7 +146,7 @@ Starts the [session](https://developers.google.com/analytics/devguides/collectio
 ### usageStats.end([sessionParams]) ↩︎
 Ends the [session](https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#sc).
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Chainable**  
 
 | Param | Type | Description |
@@ -158,21 +158,21 @@ Ends the [session](https://developers.google.com/analytics/devguides/collection/
 ### usageStats.disable() ↩︎
 Disable the module. While disabled, all operations are no-ops.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Chainable**  
 <a name="module_usage-stats--UsageStats+enable"></a>
 
 ### usageStats.enable() ↩︎
 Re-enable the module.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Chainable**  
 <a name="module_usage-stats--UsageStats+event"></a>
 
 ### usageStats.event(category, action, [options]) ⇒ <code>Map</code>
 Track an event. All event hits are queued until `.send()` is called.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -188,7 +188,7 @@ Track an event. All event hits are queued until `.send()` is called.
 ### usageStats.screenView(name, [options]) ⇒ <code>Map</code>
 Track a screenview. All screenview hits are queued until `.send()` is called. Returns the hit instance.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -201,7 +201,7 @@ Track a screenview. All screenview hits are queued until `.send()` is called. Re
 ### usageStats.exception([options]) ⇒ <code>Map</code>
 Track a exception. All exception hits are queued until `.send()` is called.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -215,7 +215,7 @@ Track a exception. All exception hits are queued until `.send()` is called.
 ### usageStats.send([options]) ⇒ <code>Promise</code>
 Send queued stats using as few requests as possible (typically a single request - a max of 20 events/screenviews may be sent per request). If offline, the stats will be stored and re-tried on next invocation.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Fulfil**: <code>response[]</code> - array of responses. Each response has `data` and the original node `res`.  
 **Reject**: <code>Error</code> - Rejects with the first error encountered. The error is a standard node http error with a `name` of `request-fail` and a `hits` property showing what failed to send.  
 
@@ -229,7 +229,7 @@ Send queued stats using as few requests as possible (typically a single request 
 ### usageStats.debug() ⇒ <code>Promise</code>
 Send any hits (including queued) to the GA [validation server](https://developers.google.com/analytics/devguides/collection/protocol/v1/validating-hits), fulfilling with the result.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Fulfil**: <code>Response[]</code>  
 **Reject**: <code>Error</code> - Error instance includes `hits`.  
 <a name="module_usage-stats--UsageStats+abort"></a>
@@ -237,7 +237,7 @@ Send any hits (including queued) to the GA [validation server](https://developer
 ### usageStats.abort() ↩︎
 Aborts the in-progress .send() operation, queuing any unsent hits.
 
-**Kind**: instance method of <code>[UsageStats](#exp_module_usage-stats--UsageStats)</code>  
+**Kind**: instance method of [<code>UsageStats</code>](#exp_module_usage-stats--UsageStats)  
 **Chainable**  
 
 * * *
