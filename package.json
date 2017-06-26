@@ -1,7 +1,7 @@
 {
   "name": "usage-stats",
   "author": "Lloyd Brookes <75pound@gmail.com>",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "A minimal, offline-friendly Google Analytics Measurement Protocol client for tracking statistics in shell and javascript applications",
   "repository": "https://github.com/75lb/usage-stats.git",
   "license": "MIT",
