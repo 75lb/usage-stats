@@ -27,17 +27,17 @@
     "cover": "istanbul cover ./node_modules/.bin/test-runner test/core-*.js && cat coverage/lcov.info | ./node_modules/.bin/coveralls && rm -rf coverage; echo"
   },
   "dependencies": {
-    "array-back": "^1.0.4",
+    "array-back": "^2.0.0",
     "home-path": "^1.0.5",
-    "mkdirp2": "^1.0.2",
-    "req-then": "^0.6.1",
-    "typical": "^2.6.0",
-    "uuid": "^3.0.1"
+    "mkdirp2": "^1.0.3",
+    "req-then": "^0.6.2",
+    "typical": "^2.6.1",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
     "coveralls": "^2.13.1",
     "jsdoc-to-markdown": "^3.0.0",
     "rimraf": "^2.6.1",
-    "test-runner": "^0.3.0"
+    "test-runner": "^0.4.0"
   }
 }
