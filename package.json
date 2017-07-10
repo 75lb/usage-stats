@@ -30,7 +30,7 @@
     "array-back": "^2.0.0",
     "home-path": "^1.0.5",
     "mkdirp2": "^1.0.3",
-    "req-then": "^0.6.2",
+    "req-then": "^0.6.4",
     "typical": "^2.6.1",
     "uuid": "^3.1.0"
   },
